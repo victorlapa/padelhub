@@ -97,7 +97,7 @@ export default function App() {
 
               <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-semibold">Partidas Disponíveis</h2>
-                <Button onClick={() => navigate("/create-match")}>
+                <Button onClick={() => navigate("/app/create-match")}>
                   Criar Nova Partida
                 </Button>
               </div>
