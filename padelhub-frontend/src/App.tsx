@@ -131,7 +131,10 @@ export default function App() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <Card className="cursor-pointer transition-shadow hover:shadow-lg">
+                      <Card
+                        className="cursor-pointer transition-shadow hover:shadow-lg"
+                        onClick={() => navigate(`/app/lobby/${lobby.id}`)}
+                      >
                         <CardHeader>
                           <CardTitle className="flex items-center justify-between">
                             <span className="text-lg">{lobby.club.name}</span>
@@ -171,6 +174,10 @@ export default function App() {
                                 : "default"
                             }
                             disabled={lobby.currentPlayers >= lobby.maxPlayers}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/app/lobby/${lobby.id}`);
+                            }}
                           >
                             {lobby.currentPlayers >= lobby.maxPlayers
                               ? "Partida Cheia"

@@ -21,9 +21,9 @@ export default function BottomNav() {
           <span className="text-xs">Home</span>
         </Link>
         <Link
-          to="/app/lobby"
+          to="/app/match"
           className={`flex flex-col items-center gap-1 p-2 transition-colors ${
-            isActive("/app/lobby")
+            isActive("/app/match")
               ? "text-blue-600"
               : "text-gray-600 hover:text-blue-600"
           }`}
