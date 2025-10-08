@@ -6,6 +6,7 @@ import { useParams, useNavigate } from "react-router";
 import { ArrowLeft, Check } from "lucide-react";
 import CourtUser from "@/components/Lobby/CourtUser";
 import Spacer from "@/components/Spacer";
+import { motion, AnimatePresence } from "motion/react";
 
 // Mock lobby data - will be replaced with API call
 const mockLobbies = {
@@ -100,6 +101,12 @@ const mockLobbies = {
   },
 };
 
+interface PlayerAssignment {
+  playerId: string;
+  team: "A" | "B" | "unassigned";
+  position?: "left" | "right";
+}
+
 const Lobby = () => {
   const { lobbyId } = useParams<{ lobbyId: string }>();
   const navigate = useNavigate();
@@ -108,6 +115,16 @@ const Lobby = () => {
     new Set(["1", "3"]) // Mock: vlapa1 and dka01 are already confirmed
   );
   const [currentUserId] = useState("1"); // Mock: current user is vlapa1
+
+  // Team assignments state - will come from backend API
+  // Mock data: some players already assigned
+  const [playerAssignments, setPlayerAssignments] = useState<Map<string, PlayerAssignment>>(
+    new Map([
+      ["2", { playerId: "2", team: "A" }],
+      ["3", { playerId: "3", team: "B" }],
+      ["4", { playerId: "4", team: "B" }],
+    ])
+  );
 
   // Get lobby data from mock or show not found
   const lobby = lobbyId
@@ -149,6 +166,35 @@ const Lobby = () => {
     });
   };
 
+  // Helper function to get player assignment
+  const getPlayerAssignment = (playerId: string): PlayerAssignment => {
+    return playerAssignments.get(playerId) || { playerId, team: "unassigned" };
+  };
+
+  // Helper function to get players by team
+  const getPlayersByTeam = (team: "A" | "B" | "unassigned") => {
+    if (!lobby?.players) return [];
+    return lobby.players.filter((player) => getPlayerAssignment(player.id).team === team);
+  };
+
+  // Assign current user to team (only current user can change their own assignment)
+  const assignCurrentUserToTeam = (team: "A" | "B" | "unassigned") => {
+    setPlayerAssignments((prev) => {
+      const newMap = new Map(prev);
+      if (team === "unassigned") {
+        newMap.delete(currentUserId);
+      } else {
+        newMap.set(currentUserId, { playerId: currentUserId, team });
+      }
+      return newMap;
+    });
+    // TODO: Call backend API to update team assignment
+  };
+
+  const teamAPlayers = getPlayersByTeam("A");
+  const teamBPlayers = getPlayersByTeam("B");
+  const unassignedPlayers = getPlayersByTeam("unassigned");
+
   return (
     <section className="relative flex h-full w-full flex-col bg-gray-900">
       <div className="relative z-10 shrink-0 bg-gray-900/95 py-3 text-center text-white shadow-lg">
@@ -164,22 +210,163 @@ const Lobby = () => {
           {formatTime(lobby.startTime)}
         </p>
       </div>
-      <div className="px-3 py-5 flex-col flex ">
-        <p className="text-center text-white">Dupla 1</p>
-        <div className="flex w-full gap-4 rounded-full border-2 border-blue-500 justify-center p-2">
-          <CourtUser />
+      <div className="flex-1 overflow-auto px-3 py-5">
+        {/* Team A */}
+        <p className="text-center font-semibold text-white">Dupla A</p>
+        <Spacer height={8} />
+        <div className="min-h-[80px] w-full rounded-lg border-2 border-blue-500 bg-blue-500/10 p-3">
+          <div className="flex flex-wrap justify-center gap-3">
+            <AnimatePresence mode="popLayout">
+              {teamAPlayers.map((player) => {
+                const isCurrentUser = player.id === currentUserId;
+                return (
+                  <motion.div
+                    key={player.id}
+                    layout
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                    onClick={isCurrentUser ? () => assignCurrentUserToTeam("unassigned") : undefined}
+                    className={isCurrentUser ? "cursor-pointer" : ""}
+                  >
+                    <CourtUser
+                      name={player.name}
+                      elo={player.elo}
+                      team="A"
+                      isConfirmed={confirmedPlayers.has(player.id)}
+                    />
+                    {isCurrentUser && (
+                      <p className="mt-1 text-center text-xs text-blue-300">(Você)</p>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+            {teamAPlayers.length === 0 && (
+              <p className="py-4 text-sm text-gray-400">Nenhum jogador na dupla A</p>
+            )}
+          </div>
         </div>
+
         <Spacer height={20} />
-        <p className="text-center text-white">Dupla 2</p>
-        <div className="flex w-full gap-4 rounded-full border-2 border-red-500 justify-center p-2">
-          <CourtUser />
+
+        {/* Team B */}
+        <p className="text-center font-semibold text-white">Dupla B</p>
+        <Spacer height={8} />
+        <div className="min-h-[80px] w-full rounded-lg border-2 border-red-500 bg-red-500/10 p-3">
+          <div className="flex flex-wrap justify-center gap-3">
+            <AnimatePresence mode="popLayout">
+              {teamBPlayers.map((player) => {
+                const isCurrentUser = player.id === currentUserId;
+                return (
+                  <motion.div
+                    key={player.id}
+                    layout
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                    onClick={isCurrentUser ? () => assignCurrentUserToTeam("unassigned") : undefined}
+                    className={isCurrentUser ? "cursor-pointer" : ""}
+                  >
+                    <CourtUser
+                      name={player.name}
+                      elo={player.elo}
+                      team="B"
+                      isConfirmed={confirmedPlayers.has(player.id)}
+                    />
+                    {isCurrentUser && (
+                      <p className="mt-1 text-center text-xs text-red-300">(Você)</p>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+            {teamBPlayers.length === 0 && (
+              <p className="py-4 text-sm text-gray-400">Nenhum jogador na dupla B</p>
+            )}
+          </div>
         </div>
+
         <Spacer height={20} />
-        <p className="text-center text-white">Jogadores sem dupla</p>
-        <div className="flex w-full gap-4 rounded-full justify-center p-2">
-          <CourtUser />
-          <CourtUser />
+
+        {/* Unassigned Players */}
+        <p className="text-center font-semibold text-white">Jogadores sem dupla</p>
+        <Spacer height={8} />
+        <div className="min-h-[80px] w-full rounded-lg border-2 border-gray-600 bg-gray-800/30 p-3">
+          <div className="flex flex-wrap justify-center gap-3">
+            <AnimatePresence mode="popLayout">
+              {unassignedPlayers.map((player) => {
+                const isCurrentUser = player.id === currentUserId;
+                return (
+                  <motion.div
+                    key={player.id}
+                    layout
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    exit={{ scale: 0, opacity: 0 }}
+                    transition={{ type: "spring", stiffness: 350, damping: 25 }}
+                    className="flex flex-col gap-2"
+                  >
+                    <CourtUser
+                      name={player.name}
+                      elo={player.elo}
+                      isConfirmed={confirmedPlayers.has(player.id)}
+                    />
+                    {isCurrentUser && (
+                      <p className="text-center text-xs text-gray-300">(Você)</p>
+                    )}
+                    {/* Team assignment buttons - only for current user */}
+                    {isCurrentUser && (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => assignCurrentUserToTeam("A")}
+                          className="flex-1 rounded-md bg-blue-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-600 active:bg-blue-700"
+                        >
+                          Dupla A
+                        </button>
+                        <button
+                          onClick={() => assignCurrentUserToTeam("B")}
+                          className="flex-1 rounded-md bg-red-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-600 active:bg-red-700"
+                        >
+                          Dupla B
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+            {unassignedPlayers.length === 0 && (
+              <p className="py-4 text-sm text-gray-400">Todos os jogadores foram alocados</p>
+            )}
+          </div>
         </div>
+
+        <Spacer height={20} />
+
+        {/* Confirmation button */}
+        <motion.button
+          onClick={toggleConfirmation}
+          animate={{
+            backgroundColor: isUserConfirmed ? "#dc2626" : "#16a34a",
+          }}
+          whileHover={{
+            backgroundColor: isUserConfirmed ? "#b91c1c" : "#15803d",
+            scale: 1.02,
+          }}
+          whileTap={{
+            scale: 0.98,
+          }}
+          transition={{
+            backgroundColor: { duration: 0.3, ease: "easeInOut" },
+            scale: { duration: 0.1 },
+          }}
+          className="w-full rounded-lg px-4 py-3 font-semibold text-white"
+        >
+          {isUserConfirmed ? "Cancelar Confirmação" : "Confirmar Presença"}
+        </motion.button>
       </div>
 
       <ChatButton
