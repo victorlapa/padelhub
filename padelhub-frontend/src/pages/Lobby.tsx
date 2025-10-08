@@ -18,6 +18,7 @@ const mockLobbies = {
     endTime: new Date(2025, 9, 5, 19, 30),
     currentPlayers: 2,
     maxPlayers: 4,
+    isCourtScheduled: true,
     players: [
       {
         id: "1",
@@ -57,6 +58,7 @@ const mockLobbies = {
     endTime: new Date(2025, 9, 5, 21, 30),
     currentPlayers: 3,
     maxPlayers: 4,
+    isCourtScheduled: false,
     players: [
       {
         id: "5",
@@ -89,6 +91,7 @@ const mockLobbies = {
     endTime: new Date(2025, 9, 6, 11, 30),
     currentPlayers: 1,
     maxPlayers: 4,
+    isCourtScheduled: true,
     players: [
       {
         id: "8",
@@ -118,7 +121,9 @@ const Lobby = () => {
 
   // Team assignments state - will come from backend API
   // Mock data: some players already assigned
-  const [playerAssignments, setPlayerAssignments] = useState<Map<string, PlayerAssignment>>(
+  const [playerAssignments, setPlayerAssignments] = useState<
+    Map<string, PlayerAssignment>
+  >(
     new Map([
       ["2", { playerId: "2", team: "A" }],
       ["3", { playerId: "3", team: "B" }],
@@ -174,7 +179,9 @@ const Lobby = () => {
   // Helper function to get players by team
   const getPlayersByTeam = (team: "A" | "B" | "unassigned") => {
     if (!lobby?.players) return [];
-    return lobby.players.filter((player) => getPlayerAssignment(player.id).team === team);
+    return lobby.players.filter(
+      (player) => getPlayerAssignment(player.id).team === team
+    );
   };
 
   // Assign current user to team (only current user can change their own assignment)
@@ -209,6 +216,20 @@ const Lobby = () => {
           {lobby.club.name}, {lobby.club.neighbourhood} •{" "}
           {formatTime(lobby.startTime)}
         </p>
+        {/* Court scheduled status */}
+        <div className="mt-2 flex justify-center">
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
+              lobby.isCourtScheduled
+                ? "bg-green-500/20 text-green-400"
+                : "bg-yellow-500/20 text-yellow-400"
+            }`}
+          >
+            {lobby.isCourtScheduled
+              ? "✓ Reserva Confirmada"
+              : "⚠ Reserva Pendente"}
+          </span>
+        </div>
       </div>
       <div className="flex-1 overflow-auto px-3 py-5">
         {/* Team A */}
@@ -227,7 +248,11 @@ const Lobby = () => {
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0, opacity: 0 }}
                     transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                    onClick={isCurrentUser ? () => assignCurrentUserToTeam("unassigned") : undefined}
+                    onClick={
+                      isCurrentUser
+                        ? () => assignCurrentUserToTeam("unassigned")
+                        : undefined
+                    }
                     className={isCurrentUser ? "cursor-pointer" : ""}
                   >
                     <CourtUser
@@ -237,14 +262,18 @@ const Lobby = () => {
                       isConfirmed={confirmedPlayers.has(player.id)}
                     />
                     {isCurrentUser && (
-                      <p className="mt-1 text-center text-xs text-blue-300">(Você)</p>
+                      <p className="mt-1 text-center text-xs text-blue-300">
+                        (Você)
+                      </p>
                     )}
                   </motion.div>
                 );
               })}
             </AnimatePresence>
             {teamAPlayers.length === 0 && (
-              <p className="py-4 text-sm text-gray-400">Nenhum jogador na dupla A</p>
+              <p className="py-4 text-sm text-gray-400">
+                Nenhum jogador na dupla A
+              </p>
             )}
           </div>
         </div>
@@ -267,7 +296,11 @@ const Lobby = () => {
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0, opacity: 0 }}
                     transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                    onClick={isCurrentUser ? () => assignCurrentUserToTeam("unassigned") : undefined}
+                    onClick={
+                      isCurrentUser
+                        ? () => assignCurrentUserToTeam("unassigned")
+                        : undefined
+                    }
                     className={isCurrentUser ? "cursor-pointer" : ""}
                   >
                     <CourtUser
@@ -277,14 +310,18 @@ const Lobby = () => {
                       isConfirmed={confirmedPlayers.has(player.id)}
                     />
                     {isCurrentUser && (
-                      <p className="mt-1 text-center text-xs text-red-300">(Você)</p>
+                      <p className="mt-1 text-center text-xs text-red-300">
+                        (Você)
+                      </p>
                     )}
                   </motion.div>
                 );
               })}
             </AnimatePresence>
             {teamBPlayers.length === 0 && (
-              <p className="py-4 text-sm text-gray-400">Nenhum jogador na dupla B</p>
+              <p className="py-4 text-sm text-gray-400">
+                Nenhum jogador na dupla B
+              </p>
             )}
           </div>
         </div>
@@ -292,7 +329,9 @@ const Lobby = () => {
         <Spacer height={20} />
 
         {/* Unassigned Players */}
-        <p className="text-center font-semibold text-white">Jogadores sem dupla</p>
+        <p className="text-center font-semibold text-white">
+          Jogadores sem dupla
+        </p>
         <Spacer height={8} />
         <div className="min-h-[80px] w-full rounded-lg border-2 border-gray-600 bg-gray-800/30 p-3">
           <div className="flex flex-wrap justify-center gap-3">
@@ -315,7 +354,9 @@ const Lobby = () => {
                       isConfirmed={confirmedPlayers.has(player.id)}
                     />
                     {isCurrentUser && (
-                      <p className="text-center text-xs text-gray-300">(Você)</p>
+                      <p className="text-center text-xs text-gray-300">
+                        (Você)
+                      </p>
                     )}
                     {/* Team assignment buttons - only for current user */}
                     {isCurrentUser && (
@@ -339,7 +380,9 @@ const Lobby = () => {
               })}
             </AnimatePresence>
             {unassignedPlayers.length === 0 && (
-              <p className="py-4 text-sm text-gray-400">Todos os jogadores foram alocados</p>
+              <p className="py-4 text-sm text-gray-400">
+                Todos os jogadores foram alocados
+              </p>
             )}
           </div>
         </div>
