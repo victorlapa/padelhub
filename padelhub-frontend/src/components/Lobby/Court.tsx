@@ -1,6 +1,19 @@
 import CourtUser from "./CourtUser";
 
-const Court = () => {
+interface Player {
+  id: string;
+  name: string;
+  elo?: number;
+  team: "A" | "B";
+  position: "left" | "right";
+}
+
+interface CourtProps {
+  players?: Player[];
+  confirmedPlayers?: Set<string>;
+}
+
+const Court = ({ players = [], confirmedPlayers = new Set() }: CourtProps) => {
   return (
     <div className="absolute inset-0 flex items-center justify-center p-4">
       <div className="relative aspect-[2/3] w-full max-w-md rounded-lg border-4 border-white bg-gradient-to-b from-emerald-600 to-emerald-700 shadow-2xl">
@@ -36,10 +49,16 @@ const Court = () => {
         <div className="absolute bottom-2 right-2 h-3 w-3 rounded-full border-2 border-white/40" />
 
         {/* Players */}
-        <CourtUser name="vlapa1" elo={1000} team="A" position="left" />
-        <CourtUser name="jn02" team="A" position="right" />
-        <CourtUser name="dka01" team="B" position="left" />
-        <CourtUser name="tmm12" team="B" position="right" />
+        {players.map((player) => (
+          <CourtUser
+            key={player.id}
+            name={player.name}
+            elo={player.elo}
+            team={player.team}
+            position={player.position}
+            isConfirmed={confirmedPlayers.has(player.id)}
+          />
+        ))}
       </div>
     </div>
   );
