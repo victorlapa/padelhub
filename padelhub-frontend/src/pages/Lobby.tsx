@@ -202,6 +202,11 @@ const Lobby = () => {
   const teamBPlayers = getPlayersByTeam("B");
   const unassignedPlayers = getPlayersByTeam("unassigned");
 
+  // Check if all players are confirmed
+  const allPlayersConfirmed =
+    lobby?.players?.length > 0 &&
+    lobby.players.every((player) => confirmedPlayers.has(player.id));
+
   return (
     <section className="relative flex h-full w-full flex-col bg-gray-900">
       <div className="relative z-10 shrink-0 bg-gray-900/95 py-3 text-center text-white shadow-lg">
@@ -216,8 +221,8 @@ const Lobby = () => {
           {lobby.club.name}, {lobby.club.neighbourhood} •{" "}
           {formatTime(lobby.startTime)}
         </p>
-        {/* Court scheduled status */}
-        <div className="mt-2 flex justify-center">
+        {/* Status badges */}
+        <div className="mt-2 flex flex-wrap justify-center gap-2">
           <span
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${
               lobby.isCourtScheduled
@@ -229,6 +234,15 @@ const Lobby = () => {
               ? "✓ Reserva Confirmada"
               : "⚠ Reserva Pendente"}
           </span>
+          {allPlayersConfirmed ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/20 px-3 py-1 text-xs font-semibold text-green-400">
+              ✓ Todos Confirmados
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-500/20 px-3 py-1 text-xs font-semibold text-yellow-400">
+              ⚠ Jogadores pendentes
+            </span>
+          )}
         </div>
       </div>
       <div className="flex-1 overflow-auto px-3 py-5">
