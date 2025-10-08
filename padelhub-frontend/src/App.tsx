@@ -74,10 +74,15 @@ export default function App() {
     });
   };
 
+  // Sort lobbies by date/time
+  const sortedLobbies = [...mockLobbies].sort(
+    (a, b) => a.startTime.getTime() - b.startTime.getTime()
+  );
+
   const filteredLobbies =
     selectedCategory === null
-      ? mockLobbies
-      : mockLobbies.filter((lobby) => lobby.category === selectedCategory);
+      ? sortedLobbies
+      : sortedLobbies.filter((lobby) => lobby.category === selectedCategory);
 
   return (
     <div className="bg-background text-foreground min-h-screen w-full p-5">
@@ -102,27 +107,31 @@ export default function App() {
                 </Button>
               </div>
 
-              <div className="mb-4 flex flex-wrap gap-2">
-                <Button
-                  variant={selectedCategory === null ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setSelectedCategory(null)}
-                >
-                  Todas
-                </Button>
-                {[1, 2, 3, 4, 5, 6, 7, 8].map((cat) => (
+              {/* Sticky filter bar */}
+              <div className="sticky top-0 z-10 -mx-5 bg-background px-5 py-3 shadow-sm">
+                <div className="flex flex-wrap gap-2">
                   <Button
-                    key={cat}
-                    variant={selectedCategory === cat ? "default" : "outline"}
+                    variant={selectedCategory === null ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setSelectedCategory(cat)}
+                    onClick={() => setSelectedCategory(null)}
                   >
-                    Cat. {cat}
+                    Todas
                   </Button>
-                ))}
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((cat) => (
+                    <Button
+                      key={cat}
+                      variant={selectedCategory === cat ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setSelectedCategory(cat)}
+                    >
+                      Cat. {cat}
+                    </Button>
+                  ))}
+                </div>
               </div>
 
-              <div className="max-h-[380px] overflow-y-auto pr-2">
+              {/* Full page scroll - removed fixed height */}
+              <div className="mt-6">
                 <div className="grid gap-4 pb-6 md:grid-cols-2 lg:grid-cols-3">
                   {filteredLobbies.map((lobby) => (
                     <motion.div
@@ -136,12 +145,29 @@ export default function App() {
                         onClick={() => navigate(`/app/lobby/${lobby.id}`)}
                       >
                         <CardHeader>
-                          <CardTitle className="flex items-center justify-between">
+                          <CardTitle className="flex items-center justify-between gap-2">
                             <span className="text-lg">{lobby.club.name}</span>
-                            <span className="text-primary bg-primary/10 rounded-full px-3 py-1 text-sm font-bold">
-                              Cat. {lobby.category}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className="text-primary bg-primary/10 rounded-full px-3 py-1 text-sm font-bold">
+                                Cat. {lobby.category}
+                              </span>
+                            </div>
                           </CardTitle>
+                          {/* Prominent availability badge */}
+                          <div className="mt-2 flex items-center gap-2">
+                            <div
+                              className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${
+                                lobby.currentPlayers >= lobby.maxPlayers
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-green-100 text-green-700"
+                              }`}
+                            >
+                              <Users className="h-4 w-4" />
+                              <span>
+                                {lobby.currentPlayers}/{lobby.maxPlayers}
+                              </span>
+                            </div>
+                          </div>
                         </CardHeader>
                         <CardContent className="space-y-3">
                           <div className="flex items-center gap-2 text-sm">
@@ -157,13 +183,6 @@ export default function App() {
                             <span>
                               {formatTime(lobby.startTime)} -{" "}
                               {formatTime(lobby.endTime)}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Users className="text-muted-foreground h-4 w-4" />
-                            <span>
-                              {lobby.currentPlayers}/{lobby.maxPlayers}{" "}
-                              jogadores
                             </span>
                           </div>
                           <Button
