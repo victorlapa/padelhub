@@ -1,9 +1,8 @@
 import ChatButton from "@/components/ChatButton";
 import GameChat from "@/components/GameChat";
-import Court from "@/components/Lobby/Court";
 import { useState } from "react";
 import { useParams, useNavigate } from "react-router";
-import { ArrowLeft, Check } from "lucide-react";
+import { ArrowLeft, Check, UserPlus } from "lucide-react";
 import CourtUser from "@/components/Lobby/CourtUser";
 import Spacer from "@/components/Spacer";
 import { motion, AnimatePresence } from "motion/react";
@@ -247,8 +246,18 @@ const Lobby = () => {
       </div>
       <div className="flex-1 overflow-auto px-3 py-5">
         {/* Team A */}
-        <p className="text-center font-semibold text-white">Dupla A</p>
-        <Spacer height={8} />
+        <div className="mb-2 flex items-center justify-between">
+          <p className="flex-1 text-start font-semibold text-white">Dupla A</p>
+          <motion.button
+            onClick={() => assignCurrentUserToTeam("A")}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-500 text-white shadow-lg transition-colors hover:bg-blue-600 active:bg-blue-700"
+            aria-label="Entrar na Dupla A"
+          >
+            <UserPlus className="h-5 w-5" />
+          </motion.button>
+        </div>
         <div className="min-h-[80px] w-full rounded-lg border-2 border-blue-500 bg-blue-500/10 p-3">
           <div className="flex flex-wrap justify-center gap-3">
             <AnimatePresence mode="popLayout">
@@ -295,8 +304,18 @@ const Lobby = () => {
         <Spacer height={20} />
 
         {/* Team B */}
-        <p className="text-center font-semibold text-white">Dupla B</p>
-        <Spacer height={8} />
+        <div className="mb-2 flex items-center justify-between">
+          <p className="flex-1 text-start font-semibold text-white">Dupla B</p>
+          <motion.button
+            onClick={() => assignCurrentUserToTeam("B")}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            className="flex h-10 w-10 items-center justify-center rounded-full bg-red-500 text-white shadow-lg transition-colors hover:bg-red-600 active:bg-red-700"
+            aria-label="Entrar na Dupla B"
+          >
+            <UserPlus className="h-5 w-5" />
+          </motion.button>
+        </div>
         <div className="min-h-[80px] w-full rounded-lg border-2 border-red-500 bg-red-500/10 p-3">
           <div className="flex flex-wrap justify-center gap-3">
             <AnimatePresence mode="popLayout">
@@ -343,7 +362,7 @@ const Lobby = () => {
         <Spacer height={20} />
 
         {/* Unassigned Players */}
-        <p className="text-center font-semibold text-white">
+        <p className="text-start font-semibold text-white">
           Jogadores sem dupla
         </p>
         <Spacer height={8} />
@@ -360,7 +379,6 @@ const Lobby = () => {
                     animate={{ scale: 1, opacity: 1 }}
                     exit={{ scale: 0, opacity: 0 }}
                     transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                    className="flex flex-col gap-2"
                   >
                     <CourtUser
                       name={player.name}
@@ -368,26 +386,9 @@ const Lobby = () => {
                       isConfirmed={confirmedPlayers.has(player.id)}
                     />
                     {isCurrentUser && (
-                      <p className="text-center text-xs text-gray-300">
+                      <p className="mt-1 text-center text-xs text-gray-300">
                         (Você)
                       </p>
-                    )}
-                    {/* Team assignment buttons - only for current user */}
-                    {isCurrentUser && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => assignCurrentUserToTeam("A")}
-                          className="flex-1 rounded-md bg-blue-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-600 active:bg-blue-700"
-                        >
-                          Dupla A
-                        </button>
-                        <button
-                          onClick={() => assignCurrentUserToTeam("B")}
-                          className="flex-1 rounded-md bg-red-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-600 active:bg-red-700"
-                        >
-                          Dupla B
-                        </button>
-                      </div>
                     )}
                   </motion.div>
                 );
@@ -411,7 +412,6 @@ const Lobby = () => {
           }}
           whileHover={{
             backgroundColor: isUserConfirmed ? "#b91c1c" : "#15803d",
-            scale: 1.02,
           }}
           whileTap={{
             scale: 0.98,
@@ -420,7 +420,7 @@ const Lobby = () => {
             backgroundColor: { duration: 0.3, ease: "easeInOut" },
             scale: { duration: 0.1 },
           }}
-          className="w-full rounded-lg px-4 py-3 font-semibold text-white"
+          className="w-full text-center rounded-lg px-4 py-3 font-semibold text-white"
         >
           {isUserConfirmed ? "Cancelar Confirmação" : "Confirmar Presença"}
         </motion.button>
