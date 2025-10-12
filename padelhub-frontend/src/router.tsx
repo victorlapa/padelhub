@@ -6,6 +6,7 @@ import Profile from "./pages/Profile";
 import Lobby from "./pages/Lobby";
 import Match from "./pages/Match";
 import AppLayout from "./layouts/AppLayout";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 export const router = createBrowserRouter([
   {
@@ -14,7 +15,11 @@ export const router = createBrowserRouter([
   },
   {
     path: "/app",
-    element: <AppLayout />,
+    element: (
+      <ProtectedRoute>
+        <AppLayout />
+      </ProtectedRoute>
+    ),
     children: [
       {
         index: true,
