@@ -12,36 +12,100 @@ import {
 import { useNavigate } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import React from "react";
-import { ArrowLeft, MapPin, Users, Calendar, Clock } from "lucide-react";
+import { ArrowLeft, MapPin, Users, Calendar, Clock, Plus } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getClubs, createClub, createMatch } from "@/services/api";
 
 export default function CreateMatch() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const queryClient = useQueryClient();
 
   const [formData, setFormData] = React.useState({
-    clubName: "",
-    neighbourhood: "",
+    clubId: "",
+    newClubName: "",
+    newClubAddress: "",
     category: "",
     date: "",
     startTime: "",
     endTime: "",
-    maxPlayers: "4",
+    courtId: "",
   });
+  const [isCreatingNewClub, setIsCreatingNewClub] = React.useState(false);
+
+  // Fetch clubs
+  const { data: clubs = [], isLoading: isLoadingClubs } = useQuery({
+    queryKey: ["clubs"],
+    queryFn: getClubs,
+  });
+
+  // Create club mutation
+  const createClubMutation = useMutation({
+    mutationFn: createClub,
+    onSuccess: (newClub) => {
+      queryClient.invalidateQueries({ queryKey: ["clubs"] });
+      setFormData((prev) => ({ ...prev, clubId: newClub.id }));
+      setIsCreatingNewClub(false);
+      alert("Clube criado com sucesso!");
+    },
+    onError: (error: Error) => {
+      alert(`Erro ao criar clube: ${error.message}`);
+    },
+  });
+
+  // Create match mutation
+  const createMatchMutation = useMutation({
+    mutationFn: createMatch,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["matches"] });
+      alert("Partida criada com sucesso!");
+      navigate("/app");
+    },
+    onError: (error: Error) => {
+      alert(`Erro ao criar partida: ${error.message}`);
+    },
+  });
+
+  const handleCreateNewClub = async () => {
+    if (!formData.newClubName || !formData.newClubAddress) {
+      alert("Por favor, preencha o nome e endereço do clube");
+      return;
+    }
+
+    createClubMutation.mutate({
+      name: formData.newClubName,
+      address: formData.newClubAddress,
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    // TODO: Replace with actual API call
-    console.log("Creating match with data:", formData);
+    // Validate required fields
+    if (!formData.clubId) {
+      alert("Por favor, selecione um clube");
+      return;
+    }
+    if (!formData.category || !formData.date || !formData.startTime || !formData.endTime) {
+      alert("Por favor, preencha todos os campos obrigatórios");
+      return;
+    }
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Combine date and time into ISO string
+    const startDate = new Date(`${formData.date}T${formData.startTime}:00`).toISOString();
+    const endDate = new Date(`${formData.date}T${formData.endTime}:00`).toISOString();
 
-    // Navigate back to app page
-    navigate("/app");
-    setIsSubmitting(false);
+    const matchData = {
+      clubId: formData.clubId,
+      courtId: formData.courtId || undefined,
+      startDate,
+      endDate,
+      category: parseInt(formData.category),
+      status: "PENDING" as const,
+      isCourtScheduled: false,
+    };
+
+    createMatchMutation.mutate(matchData);
   };
 
   const handleChange = (field: string, value: string) => {
@@ -80,27 +144,89 @@ export default function CreateMatch() {
                   Informações do Clube
                 </h3>
 
-                <div className="space-y-2">
-                  <Label htmlFor="clubName">Nome do Clube</Label>
-                  <Input
-                    id="clubName"
-                    required
-                    placeholder="Ex: Padel Center Lisboa"
-                    value={formData.clubName}
-                    onChange={(e) => handleChange("clubName", e.target.value)}
-                  />
-                </div>
+                {!isCreatingNewClub ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="clubId">Selecione o Clube</Label>
+                      <Select
+                        value={formData.clubId}
+                        onValueChange={(value) => handleChange("clubId", value)}
+                        required
+                        disabled={isLoadingClubs}
+                      >
+                        <SelectTrigger id="clubId">
+                          <SelectValue placeholder={isLoadingClubs ? "Carregando..." : "Selecione um clube"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {clubs.map((club) => (
+                            <SelectItem key={club.id} value={club.id}>
+                              {club.name} - {club.address}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsCreatingNewClub(true)}
+                      className="w-full"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Criar Novo Clube
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <div className="space-y-2">
+                      <Label htmlFor="newClubName">Nome do Novo Clube</Label>
+                      <Input
+                        id="newClubName"
+                        placeholder="Ex: Padel Center Joinville"
+                        value={formData.newClubName}
+                        onChange={(e) => handleChange("newClubName", e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="newClubAddress">Endereço do Clube</Label>
+                      <Input
+                        id="newClubAddress"
+                        placeholder="Ex: Rua das Palmeiras, 123"
+                        value={formData.newClubAddress}
+                        onChange={(e) => handleChange("newClubAddress", e.target.value)}
+                      />
+                    </div>
+
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        onClick={handleCreateNewClub}
+                        disabled={createClubMutation.isPending}
+                        className="flex-1"
+                      >
+                        {createClubMutation.isPending ? "Criando..." : "Salvar Clube"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setIsCreatingNewClub(false)}
+                        className="flex-1"
+                      >
+                        Cancelar
+                      </Button>
+                    </div>
+                  </>
+                )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="neighbourhood">Bairro/Localização</Label>
+                  <Label htmlFor="courtId">Quadra (Opcional)</Label>
                   <Input
-                    id="neighbourhood"
-                    required
-                    placeholder="Ex: Alvalade"
-                    value={formData.neighbourhood}
-                    onChange={(e) =>
-                      handleChange("neighbourhood", e.target.value)
-                    }
+                    id="courtId"
+                    placeholder="Ex: Quadra 1, Court A"
+                    value={formData.courtId}
+                    onChange={(e) => handleChange("courtId", e.target.value)}
                   />
                 </div>
               </div>
@@ -128,23 +254,6 @@ export default function CreateMatch() {
                           Categoria {cat}
                         </SelectItem>
                       ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="maxPlayers">Número Máximo de Jogadores</Label>
-                  <Select
-                    value={formData.maxPlayers}
-                    onValueChange={(value) => handleChange("maxPlayers", value)}
-                    required
-                  >
-                    <SelectTrigger id="maxPlayers">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="2">2 jogadores</SelectItem>
-                      <SelectItem value="4">4 jogadores</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -211,10 +320,10 @@ export default function CreateMatch() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={createMatchMutation.isPending}
                   className="flex-1"
                 >
-                  {isSubmitting ? "Criando..." : "Criar Partida"}
+                  {createMatchMutation.isPending ? "Criando..." : "Criar Partida"}
                 </Button>
               </div>
             </form>

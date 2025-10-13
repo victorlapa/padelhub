@@ -14,6 +14,45 @@ export interface User {
   isUserVerified: boolean;
 }
 
+export interface Club {
+  id: string;
+  name: string;
+  address: string;
+  pictureUrl?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  appUrl?: string;
+  pixKey?: string;
+}
+
+export interface MatchPlayer {
+  id: string;
+  matchId: string;
+  userId: string;
+  user: User;
+  team: "UNASSIGNED" | "A" | "B";
+  joinedAt: string;
+}
+
+export type MatchStatus = "COMPLETED" | "CANCELLED" | "IN_PROGRESS" | "PENDING";
+
+export interface Match {
+  matchId: string;
+  clubId: string;
+  club: Club;
+  courtId?: string;
+  startDate: string;
+  endDate: string;
+  category: number;
+  status: MatchStatus;
+  password?: string;
+  isCourtScheduled: boolean;
+  matchPlayers: MatchPlayer[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface GoogleAuthResponse {
   success: boolean;
   user: User;
@@ -27,6 +66,28 @@ export interface CompleteRegistrationDto {
   city?: string;
   category?: number;
   sidePreference?: "left" | "right";
+}
+
+export interface CreateClubDto {
+  name: string;
+  address: string;
+  pictureUrl?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  appUrl?: string;
+  pixKey?: string;
+}
+
+export interface CreateMatchDto {
+  clubId: string;
+  courtId?: string;
+  startDate: string;
+  endDate: string;
+  category: number;
+  status?: MatchStatus;
+  password?: string;
+  isCourtScheduled?: boolean;
 }
 
 /**
@@ -164,6 +225,108 @@ export async function getUsers(): Promise<User[]> {
     return response.json();
   } catch (error) {
     console.error("Error fetching users:", error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch all matches from the backend
+ * @returns Array of matches
+ */
+export async function getMatches(): Promise<Match[]> {
+  try {
+    const response = await fetch(`${API_URL}/matches`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch matches");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching matches:", error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch all clubs from the backend
+ * @returns Array of clubs
+ */
+export async function getClubs(): Promise<Club[]> {
+  try {
+    const response = await fetch(`${API_URL}/clubs`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch clubs");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching clubs:", error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new club
+ * @param data - Club information
+ * @returns Created club
+ */
+export async function createClub(data: CreateClubDto): Promise<Club> {
+  try {
+    const response = await fetch(`${API_URL}/clubs`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to create club");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error creating club:", error);
+    throw error;
+  }
+}
+
+/**
+ * Create a new match
+ * @param data - Match information
+ * @returns Created match
+ */
+export async function createMatch(data: CreateMatchDto): Promise<Match> {
+  try {
+    const response = await fetch(`${API_URL}/matches`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to create match");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error creating match:", error);
     throw error;
   }
 }
