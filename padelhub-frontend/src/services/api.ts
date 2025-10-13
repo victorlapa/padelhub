@@ -1,17 +1,30 @@
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3002";
 const USE_MOCK = import.meta.env.VITE_USE_MOCK_API === "true";
 
 export interface User {
   id: string;
   email: string;
-  name: string;
-  picture?: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  profilePictureUrl?: string;
+  category?: number;
+  city?: string;
+  sidePreference?: "left" | "right";
+  isUserVerified: boolean;
 }
 
 interface GoogleAuthResponse {
   success: boolean;
   user: User;
   token: string;
+}
+
+export interface CompleteRegistrationDto {
+  phone?: string;
+  city?: string;
+  category?: number;
+  sidePreference?: "left" | "right";
 }
 
 /**
@@ -24,8 +37,11 @@ function mockGoogleAuthResponse(_credential: string): Promise<GoogleAuthResponse
       const mockUser: User = {
         id: "mock-user-123",
         email: "user@example.com",
-        name: "Mock User",
-        picture: "https://lh3.googleusercontent.com/a/default-user",
+        firstName: "Mock",
+        lastName: "User",
+        profilePictureUrl: "https://lh3.googleusercontent.com/a/default-user",
+        isUserVerified: true,
+        category: 8,
       };
 
       const mockToken = `mock-jwt-token-${Date.now()}`;
@@ -90,6 +106,39 @@ export async function verifyToken(token: string): Promise<boolean> {
     return response.ok;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Complete user registration with additional details
+ * @param userId - The user ID to update
+ * @param data - Additional user information
+ * @param token - Auth token
+ */
+export async function completeUserRegistration(
+  userId: string,
+  data: CompleteRegistrationDto,
+  token: string
+): Promise<User> {
+  try {
+    const response = await fetch(`${API_URL}/users/${userId}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to complete registration");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error completing registration:", error);
+    throw error;
   }
 }
 

@@ -22,6 +22,9 @@ export class User {
   @Column({ type: 'varchar', length: 255, unique: true })
   email: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
+  googleId: string;
+
   @Column({ type: 'varchar', length: 20, nullable: true })
   phone: string;
 

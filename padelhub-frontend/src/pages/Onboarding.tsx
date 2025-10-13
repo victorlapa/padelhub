@@ -1,23 +1,9 @@
-import { Button } from "@/components/ui/button";
 import { motion } from "motion/react";
-import { useGoogleLogin } from "@react-oauth/google";
+import { GoogleLogin } from "@react-oauth/google";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
-import { useAuth } from "@/contexts/AuthContext";
 
 export default function Onboarding() {
   const { mutate: authenticateWithGoogle } = useGoogleAuth();
-  const { isLoading } = useAuth();
-
-  const handleGoogleLogin = useGoogleLogin({
-    onSuccess: (tokenResponse) => {
-      // Send the access token to backend for verification
-      authenticateWithGoogle(tokenResponse.access_token);
-    },
-    onError: (error) => {
-      console.error("Google login error:", error);
-      alert("Failed to login with Google. Please try again.");
-    },
-  });
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 p-8">
@@ -50,21 +36,23 @@ export default function Onboarding() {
           transition={{ delay: 0.6, duration: 0.5 }}
           className="space-y-4"
         >
-          <Button
-            onClick={() => handleGoogleLogin()}
-            disabled={isLoading}
-            className="h-12 w-full border border-gray-300 bg-white text-base font-medium text-gray-700 shadow-md transition-all duration-200 hover:bg-gray-50 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? (
-              <>
-                <span className="mr-2">⏳</span> Autenticando...
-              </>
-            ) : (
-              <>
-                <span className="mr-2 text-lg">G</span> Continuar com Google
-              </>
-            )}
-          </Button>
+          <div className="w-full flex justify-center">
+            <GoogleLogin
+              onSuccess={(credentialResponse) => {
+                if (credentialResponse.credential) {
+                  authenticateWithGoogle(credentialResponse.credential);
+                }
+              }}
+              onError={() => {
+                console.error("Google login failed");
+                alert("Failed to login with Google. Please try again.");
+              }}
+              useOneTap
+              text="continue_with"
+              size="large"
+              width="384"
+            />
+          </div>
 
           <p className="text-xs text-gray-500">
             Ao continuar, você concorda com nossos{" "}

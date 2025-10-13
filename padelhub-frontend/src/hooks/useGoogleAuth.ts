@@ -19,8 +19,17 @@ export function useGoogleAuth() {
       // Update auth context with user data
       login(data.user);
 
-      // Navigate to the app
-      navigate("/app");
+      // Check if user needs to complete registration
+      const needsRegistration =
+        !data.user.phone || !data.user.city || data.user.category === undefined;
+
+      if (needsRegistration) {
+        // Navigate to registration completion page
+        navigate("/complete-registration");
+      } else {
+        // Navigate to the app
+        navigate("/app");
+      }
     },
     onError: (error: Error) => {
       console.error("Authentication error:", error);

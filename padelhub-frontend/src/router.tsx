@@ -1,6 +1,7 @@
 import { createBrowserRouter } from "react-router";
 import App from "./App";
 import Onboarding from "./pages/Onboarding";
+import CompleteRegistration from "./pages/CompleteRegistration";
 import CreateMatch from "./pages/CreateMatch";
 import Profile from "./pages/Profile";
 import Lobby from "./pages/Lobby";
@@ -12,6 +13,14 @@ export const router = createBrowserRouter([
   {
     path: "/",
     element: <Onboarding />,
+  },
+  {
+    path: "/complete-registration",
+    element: (
+      <ProtectedRoute>
+        <CompleteRegistration />
+      </ProtectedRoute>
+    ),
   },
   {
     path: "/app",

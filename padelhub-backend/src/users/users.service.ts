@@ -76,4 +76,39 @@ export class UsersService {
     const user = await this.findOne(id);
     await this.userRepository.remove(user);
   }
+
+  async findByEmailOrGoogleId(
+    email: string,
+    googleId: string,
+  ): Promise<User | null> {
+    return await this.userRepository.findOne({
+      where: [{ email }, { googleId }],
+    });
+  }
+
+  async createFromGoogle(data: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    profilePictureUrl?: string;
+    googleId: string;
+  }): Promise<User> {
+    const user = this.userRepository.create({
+      email: data.email,
+      firstName: data.firstName,
+      lastName: data.lastName,
+      profilePictureUrl: data.profilePictureUrl,
+      googleId: data.googleId,
+      isUserVerified: true, // Auto-verify Google users
+    });
+
+    return await this.userRepository.save(user);
+  }
+
+  async updateGoogleId(id: string, googleId: string): Promise<User> {
+    const user = await this.findOne(id);
+    user.googleId = googleId;
+    user.isUserVerified = true; // Verify user when linking Google account
+    return await this.userRepository.save(user);
+  }
 }
