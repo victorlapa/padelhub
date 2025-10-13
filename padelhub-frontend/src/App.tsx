@@ -6,12 +6,13 @@ import { MapPin, Users, Calendar, Clock, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import ProfileBar from "@/components/ProfileBar";
-import { useQuery } from "@tanstack/react-query";
-import { getMatches } from "@/services/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getMatches, joinMatch } from "@/services/api";
 
 export default function App() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [selectedCategory, setSelectedCategory] = React.useState<number | null>(
     null
   );
@@ -22,6 +23,29 @@ export default function App() {
     queryFn: getMatches,
     refetchInterval: 30000, // Refetch every 30 seconds
   });
+
+  // Join match mutation
+  const joinMatchMutation = useMutation({
+    mutationFn: ({ matchId, userId }: { matchId: string; userId: string }) =>
+      joinMatch(matchId, userId),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["matches"] });
+      queryClient.invalidateQueries({ queryKey: ["match", variables.matchId] });
+      // Navigate to lobby after successfully joining
+      navigate(`/app/lobby/${variables.matchId}`);
+    },
+    onError: (error: Error) => {
+      alert(`Erro ao entrar na partida: ${error.message}`);
+    },
+  });
+
+  const handleJoinMatch = (matchId: string) => {
+    if (!user?.id) {
+      alert("Você precisa estar logado para entrar em uma partida");
+      return;
+    }
+    joinMatchMutation.mutate({ matchId, userId: user.id });
+  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -126,6 +150,9 @@ export default function App() {
                         const maxPlayers = 4;
                         const currentPlayers = match.matchPlayers.length;
                         const isFull = currentPlayers >= maxPlayers;
+                        const isUserInMatch = match.matchPlayers.some(
+                          (player) => player.userId === user?.id
+                        );
 
                         return (
                           <motion.div
@@ -181,14 +208,24 @@ export default function App() {
                                 </div>
                                 <Button
                                   className="mt-4 w-full"
-                                  variant={isFull ? "secondary" : "default"}
-                                  disabled={isFull}
+                                  variant={isFull || isUserInMatch ? "secondary" : "default"}
+                                  disabled={isFull || joinMatchMutation.isPending}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    navigate(`/app/lobby/${match.matchId}`);
+                                    if (isUserInMatch) {
+                                      navigate(`/app/lobby/${match.matchId}`);
+                                    } else {
+                                      handleJoinMatch(match.matchId);
+                                    }
                                   }}
                                 >
-                                  {isFull ? "Partida Cheia" : "Entrar"}
+                                  {joinMatchMutation.isPending
+                                    ? "Entrando..."
+                                    : isFull
+                                    ? "Partida Cheia"
+                                    : isUserInMatch
+                                    ? "Ver Partida"
+                                    : "Entrar"}
                                 </Button>
                               </CardContent>
                             </Card>

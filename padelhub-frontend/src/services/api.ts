@@ -90,6 +90,11 @@ export interface CreateMatchDto {
   isCourtScheduled?: boolean;
 }
 
+export interface AddPlayerDto {
+  userId: string;
+  team?: "UNASSIGNED" | "A" | "B";
+}
+
 /**
  * Mock backend response for development
  */
@@ -352,6 +357,39 @@ export async function getMatchById(matchId: string): Promise<Match> {
     return response.json();
   } catch (error) {
     console.error("Error fetching match:", error);
+    throw error;
+  }
+}
+
+/**
+ * Add current user to a match
+ * @param matchId - The match ID to join
+ * @param userId - The user ID
+ * @param team - Optional team assignment
+ * @returns Updated match player record
+ */
+export async function joinMatch(
+  matchId: string,
+  userId: string,
+  team: "UNASSIGNED" | "A" | "B" = "UNASSIGNED"
+): Promise<MatchPlayer> {
+  try {
+    const response = await fetch(`${API_URL}/matches/${matchId}/players`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId, team }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to join match");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error joining match:", error);
     throw error;
   }
 }
