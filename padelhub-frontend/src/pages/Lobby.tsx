@@ -2,121 +2,13 @@ import ChatButton from "@/components/ChatButton";
 import GameChat from "@/components/GameChat";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { ArrowLeft, Check, UserPlus, MapPin, Clock } from "lucide-react";
+import { ArrowLeft, UserPlus, MapPin, Clock, Loader2 } from "lucide-react";
 import CourtUser from "@/components/Lobby/CourtUser";
 import Spacer from "@/components/Spacer";
 import { motion, AnimatePresence } from "motion/react";
-
-// Mock lobby data - will be replaced with API call
-const mockLobbies = {
-  "1": {
-    id: "1",
-    club: {
-      name: "Padel Center Lisboa",
-      neighbourhood: "Alvalade",
-      address: "Rua Cidade de Bolama, 12, 1700-115 Lisboa",
-      mapsLink: "https://maps.google.com/?q=38.7579,-9.1458"
-    },
-    category: 3,
-    startTime: new Date(2025, 9, 5, 18, 0),
-    endTime: new Date(2025, 9, 5, 19, 30),
-    currentPlayers: 2,
-    maxPlayers: 4,
-    isCourtScheduled: true,
-    players: [
-      {
-        id: "1",
-        name: "vlapa1",
-        elo: 1000,
-        team: "A" as const,
-        position: "left" as const,
-      },
-      {
-        id: "2",
-        name: "jn02",
-        elo: 950,
-        team: "A" as const,
-        position: "right" as const,
-      },
-      {
-        id: "3",
-        name: "dka01",
-        elo: 1100,
-        team: "B" as const,
-        position: "left" as const,
-      },
-      {
-        id: "4",
-        name: "tmm12",
-        elo: 980,
-        team: "B" as const,
-        position: "right" as const,
-      },
-    ],
-  },
-  "2": {
-    id: "2",
-    club: {
-      name: "Sports Club Cascais",
-      neighbourhood: "Cascais",
-      address: "Av. da República, 42, 2750-321 Cascais",
-      mapsLink: "https://maps.google.com/?q=38.6979,-9.4211"
-    },
-    category: 5,
-    startTime: new Date(2025, 9, 5, 20, 0),
-    endTime: new Date(2025, 9, 5, 21, 30),
-    currentPlayers: 3,
-    maxPlayers: 4,
-    isCourtScheduled: false,
-    players: [
-      {
-        id: "5",
-        name: "player1",
-        elo: 1200,
-        team: "A" as const,
-        position: "left" as const,
-      },
-      {
-        id: "6",
-        name: "player2",
-        elo: 1150,
-        team: "A" as const,
-        position: "right" as const,
-      },
-      {
-        id: "7",
-        name: "player3",
-        elo: 1300,
-        team: "B" as const,
-        position: "left" as const,
-      },
-    ],
-  },
-  "3": {
-    id: "3",
-    club: {
-      name: "Padel Premium Sintra",
-      neighbourhood: "Sintra",
-      address: "Rua das Flores, 89, 2710-506 Sintra",
-      mapsLink: "https://maps.google.com/?q=38.7989,-9.3881"
-    },
-    category: 2,
-    startTime: new Date(2025, 9, 6, 10, 0),
-    endTime: new Date(2025, 9, 6, 11, 30),
-    currentPlayers: 1,
-    maxPlayers: 4,
-    isCourtScheduled: true,
-    players: [
-      {
-        id: "8",
-        name: "solo",
-        elo: 800,
-        team: "A" as const,
-        position: "left" as const,
-      },
-    ],
-  },
-};
+import { useQuery } from "@tanstack/react-query";
+import { getMatchById } from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface PlayerAssignment {
   playerId: string;
@@ -127,43 +19,88 @@ interface PlayerAssignment {
 const Lobby = () => {
   const { lobbyId } = useParams<{ lobbyId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [confirmedPlayers, setConfirmedPlayers] = useState<Set<string>>(
-    new Set(["1", "2", "3", "4"]) // Mock: all players confirmed for testing ready state
-  );
-  const [currentUserId] = useState("1"); // Mock: current user is vlapa1
+  const [confirmedPlayers, setConfirmedPlayers] = useState<Set<string>>(new Set());
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
-  // Team assignments state - will come from backend API
-  // Mock data: some players already assigned
+  // Fetch match data from API
+  const { data: match, isLoading, error } = useQuery({
+    queryKey: ["match", lobbyId],
+    queryFn: () => getMatchById(lobbyId!),
+    enabled: !!lobbyId,
+    refetchInterval: 10000, // Refetch every 10 seconds
+  });
+
+  // Team assignments state - derived from match players
   const [playerAssignments, setPlayerAssignments] = useState<
     Map<string, PlayerAssignment>
-  >(
-    new Map([
-      ["2", { playerId: "2", team: "A" }],
-      ["3", { playerId: "3", team: "B" }],
-      ["4", { playerId: "4", team: "B" }],
-    ])
-  );
+  >(new Map());
 
-  // Get lobby data from mock or show not found
-  const lobby = lobbyId
-    ? mockLobbies[lobbyId as keyof typeof mockLobbies]
-    : null;
+  // Update player assignments when match data changes
+  useEffect(() => {
+    if (match?.matchPlayers) {
+      const newAssignments = new Map<string, PlayerAssignment>();
+      match.matchPlayers.forEach((mp) => {
+        newAssignments.set(mp.userId, {
+          playerId: mp.userId,
+          team: mp.team === "UNASSIGNED" ? "unassigned" : mp.team,
+        });
+      });
+      setPlayerAssignments(newAssignments);
+    }
+  }, [match]);
 
-  if (!lobby) {
+  // Loading state
+  if (isLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 text-white">
-        <h1 className="mb-4 text-2xl">Lobby não encontrado</h1>
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
+        <p>Carregando partida...</p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error || !match) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 text-white">
+        <h1 className="mb-4 text-2xl">Partida não encontrada</h1>
         <button
           onClick={() => navigate("/app")}
           className="text-blue-400 hover:underline"
         >
-          Voltar para lobbies
+          Voltar para partidas
         </button>
       </div>
     );
   }
+
+  // Transform match data to lobby format for compatibility
+  const lobby = {
+    id: match.matchId,
+    club: {
+      name: match.club.name,
+      neighbourhood: "", // Not available in backend
+      address: match.club.address,
+      mapsLink: `https://maps.google.com/?q=${encodeURIComponent(match.club.address)}`,
+    },
+    category: match.category,
+    startTime: new Date(match.startDate),
+    endTime: new Date(match.endDate),
+    currentPlayers: match.matchPlayers.length,
+    maxPlayers: 4,
+    isCourtScheduled: match.isCourtScheduled,
+    players: match.matchPlayers.map((mp) => ({
+      id: mp.userId,
+      name: `${mp.user.firstName} ${mp.user.lastName}`,
+      elo: mp.user.category ? mp.user.category * 100 : 800,
+      team: mp.team === "UNASSIGNED" ? ("unassigned" as const) : mp.team,
+      position: "left" as const, // Default position
+    })),
+  };
+
+  const currentUserId = user?.id || "";
 
   const formatTime = (date: Date) => {
     return date.toLocaleTimeString("pt-PT", {
@@ -210,7 +147,8 @@ const Lobby = () => {
       }
       return newMap;
     });
-    // TODO: Call backend API to update team assignment
+    // Note: Backend API endpoint for updating team assignment will be added in future
+    // PATCH /matches/:matchId/players/:userId/team { team: "A" | "B" | "UNASSIGNED" }
   };
 
   const teamAPlayers = getPlayersByTeam("A");

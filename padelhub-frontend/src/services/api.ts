@@ -330,3 +330,28 @@ export async function createMatch(data: CreateMatchDto): Promise<Match> {
     throw error;
   }
 }
+
+/**
+ * Fetch a single match by ID
+ * @param matchId - The match ID
+ * @returns Match details
+ */
+export async function getMatchById(matchId: string): Promise<Match> {
+  try {
+    const response = await fetch(`${API_URL}/matches/${matchId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch match");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching match:", error);
+    throw error;
+  }
+}
