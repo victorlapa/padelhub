@@ -7,16 +7,6 @@ import { useNavigate } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import ProfileBar from "@/components/ProfileBar";
 
-// Development mode flag - set to true to use mock user data
-const USE_MOCK_USER = import.meta.env.DEV;
-
-// Mock user for development
-const mockUser = {
-  id: "dev-user-1",
-  email: "dev@padelhub.com",
-  name: "Desenvolvedor",
-  picture: undefined,
-};
 
 // Mock data - will be replaced with API call
 const mockLobbies = [
@@ -56,9 +46,6 @@ export default function App() {
     null
   );
 
-  // Use mock user in development mode if no auth session exists
-  const activeUser = user || (USE_MOCK_USER ? mockUser : null);
-
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("pt-PT", {
       day: "numeric",
@@ -86,18 +73,19 @@ export default function App() {
 
   return (
     <div className="bg-background text-foreground min-h-screen w-full p-5">
-      {activeUser && (
+      {user && (
         <>
           <ProfileBar
-            elo={1000}
-            userName={activeUser.name || "Usuário"}
+            elo={user.category ? user.category * 100 : 800}
+            userName={`${user.firstName} ${user.lastName}`}
             maxElo={2000}
+            profilePictureUrl={user.profilePictureUrl}
           />
           <div className="py-8">
             <div className="mx-auto max-w-6xl pb-3">
               <div className="mb-8 flex items-center justify-center gap-2">
                 <MapPin className="h-6 w-6" />
-                <h2 className="text-2xl font-semibold">Joinville</h2>
+                <h2 className="text-2xl font-semibold">{user.city || "Sua Cidade"}</h2>
               </div>
 
               <div className="mb-6 flex items-center justify-between">

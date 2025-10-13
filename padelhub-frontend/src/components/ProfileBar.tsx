@@ -6,6 +6,7 @@ interface ProfileBarProps {
   elo: number;
   maxElo?: number;
   className?: string;
+  profilePictureUrl?: string;
 }
 
 export default function ProfileBar({
@@ -13,6 +14,7 @@ export default function ProfileBar({
   elo,
   maxElo = 2000,
   className,
+  profilePictureUrl,
 }: ProfileBarProps) {
   const progressPercentage = Math.min((elo / maxElo) * 100, 100);
 
@@ -23,9 +25,17 @@ export default function ProfileBar({
         className
       )}
     >
-      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600">
-        <User className="h-6 w-6 text-white" />
-      </div>
+      {profilePictureUrl ? (
+        <img
+          src={profilePictureUrl}
+          alt={userName}
+          className="h-12 w-12 flex-shrink-0 rounded-full object-cover"
+        />
+      ) : (
+        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600">
+          <User className="h-6 w-6 text-white" />
+        </div>
+      )}
 
       <div className="min-w-0 flex-1">
         <div className="mb-2 flex items-center justify-between">

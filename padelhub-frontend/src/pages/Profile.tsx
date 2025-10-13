@@ -4,26 +4,12 @@ import { useNavigate } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
 import React from "react";
 
-// Development mode flag
-const USE_MOCK_USER = import.meta.env.DEV;
-
-// Mock user for development
-const mockUser = {
-  id: "dev-user-1",
-  email: "dev@padelhub.com",
-  name: "Desenvolvedor",
-  picture: undefined,
-};
-
 export default function ProfilePage() {
   const navigate = useNavigate();
-  const { user: authUser, isLoading } = useAuth();
-
-  // Use mock user in development mode if no auth session exists
-  const user = authUser || (USE_MOCK_USER ? mockUser : null);
+  const { user, isLoading } = useAuth();
 
   React.useEffect(() => {
-    if (!user && !isLoading && !USE_MOCK_USER) {
+    if (!user && !isLoading) {
       navigate("/");
     }
   }, [user, isLoading, navigate]);
@@ -57,10 +43,10 @@ export default function ProfilePage() {
           <div className="flex flex-col items-center text-center">
             {/* Profile Image */}
             <div className="mb-4">
-              {user?.picture ? (
+              {user.profilePictureUrl ? (
                 <img
-                  src={user.picture}
-                  alt={user.name || "Utilizador"}
+                  src={user.profilePictureUrl}
+                  alt={`${user.firstName} ${user.lastName}`}
                   className="h-24 w-24 rounded-full border-4 border-white shadow-lg"
                 />
               ) : (
@@ -72,9 +58,9 @@ export default function ProfilePage() {
 
             {/* User Info */}
             <h2 className="text-2xl font-bold text-gray-900">
-              {user?.name || "Nome não disponível"}
+              {user.firstName} {user.lastName}
             </h2>
-            <p className="text-gray-600">{user?.email}</p>
+            <p className="text-gray-600">{user.email}</p>
           </div>
         </Card>
 
@@ -89,17 +75,17 @@ export default function ProfilePage() {
               <Mail className="h-5 w-5 text-gray-500" />
               <div>
                 <p className="text-sm font-medium text-gray-900">Email</p>
-                <p className="text-gray-600">
-                  {user?.email || "Não informado"}
-                </p>
+                <p className="text-gray-600">{user.email}</p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
               <User className="h-5 w-5 text-gray-500" />
               <div>
-                <p className="text-sm font-medium text-gray-900">Nome</p>
-                <p className="text-gray-600">{user?.name || "Não informado"}</p>
+                <p className="text-sm font-medium text-gray-900">Nome Completo</p>
+                <p className="text-gray-600">
+                  {user.firstName} {user.lastName}
+                </p>
               </div>
             </div>
 
@@ -107,7 +93,7 @@ export default function ProfilePage() {
               <Phone className="h-5 w-5 text-gray-500" />
               <div>
                 <p className="text-sm font-medium text-gray-900">Telefone</p>
-                <p className="text-gray-600">Não informado</p>
+                <p className="text-gray-600">{user.phone || "Não informado"}</p>
               </div>
             </div>
 
@@ -115,7 +101,7 @@ export default function ProfilePage() {
               <MapPin className="h-5 w-5 text-gray-500" />
               <div>
                 <p className="text-sm font-medium text-gray-900">Localização</p>
-                <p className="text-gray-600">Não informado</p>
+                <p className="text-gray-600">{user.city || "Não informado"}</p>
               </div>
             </div>
           </div>
@@ -131,7 +117,9 @@ export default function ProfilePage() {
             <div className="text-center">
               <div className="flex items-center justify-center gap-2">
                 <Trophy className="h-5 w-5 text-yellow-500" />
-                <p className="text-2xl font-bold text-gray-900">1000</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {user.category ? user.category * 100 : 800}
+                </p>
               </div>
               <p className="text-sm text-gray-600">ELO Rating</p>
             </div>
@@ -139,9 +127,34 @@ export default function ProfilePage() {
             <div className="text-center">
               <div className="flex items-center justify-center gap-2">
                 <Calendar className="h-5 w-5 text-blue-500" />
-                <p className="text-2xl font-bold text-gray-900">0</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {/* TODO: Add matchesPlayed from backend when available */}
+                  0
+                </p>
               </div>
               <p className="text-sm text-gray-600">Jogos Realizados</p>
+            </div>
+
+            <div className="text-center">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <div className="text-2xl font-bold text-gray-900">
+                  Cat. {user.category || "N/A"}
+                </div>
+                <p className="text-sm text-gray-600">Categoria</p>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <div className="flex flex-col items-center justify-center gap-2">
+                <div className="text-2xl font-bold text-gray-900">
+                  {user.sidePreference
+                    ? user.sidePreference === "left"
+                      ? "Esquerda"
+                      : "Direita"
+                    : "N/A"}
+                </div>
+                <p className="text-sm text-gray-600">Lado Preferido</p>
+              </div>
             </div>
           </div>
         </Card>
