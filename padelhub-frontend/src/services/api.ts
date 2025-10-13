@@ -21,6 +21,8 @@ interface GoogleAuthResponse {
 }
 
 export interface CompleteRegistrationDto {
+  firstName?: string;
+  lastName?: string;
   phone?: string;
   city?: string;
   category?: number;

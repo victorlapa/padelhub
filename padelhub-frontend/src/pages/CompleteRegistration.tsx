@@ -9,12 +9,14 @@ import { completeUserRegistration, type CompleteRegistrationDto } from "@/servic
 export default function CompleteRegistration() {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<CompleteRegistrationDto>({
-    phone: "",
-    city: "",
-    category: 8,
-    sidePreference: undefined,
-  });
+  const [formData, setFormData] = useState<CompleteRegistrationDto>(() => ({
+    firstName: user?.firstName || "",
+    lastName: user?.lastName || "",
+    phone: user?.phone || "",
+    city: user?.city || "",
+    category: user?.category || 8,
+    sidePreference: user?.sidePreference,
+  }));
 
   const mutation = useMutation({
     mutationFn: async (data: CompleteRegistrationDto) => {
@@ -40,7 +42,7 @@ export default function CompleteRegistration() {
     e.preventDefault();
 
     // Validate required fields
-    if (!formData.phone || !formData.city || formData.category === undefined) {
+    if (!formData.firstName || !formData.lastName || !formData.phone || !formData.city || formData.category === undefined) {
       alert("Por favor, preencha todos os campos obrigatórios");
       return;
     }
@@ -71,6 +73,46 @@ export default function CompleteRegistration() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label
+              htmlFor="firstName"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Nome *
+            </label>
+            <input
+              type="text"
+              id="firstName"
+              value={formData.firstName}
+              onChange={(e) =>
+                setFormData({ ...formData, firstName: e.target.value })
+              }
+              placeholder="João"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="lastName"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Sobrenome *
+            </label>
+            <input
+              type="text"
+              id="lastName"
+              value={formData.lastName}
+              onChange={(e) =>
+                setFormData({ ...formData, lastName: e.target.value })
+              }
+              placeholder="Silva"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+            />
+          </div>
+
           <div>
             <label
               htmlFor="phone"
