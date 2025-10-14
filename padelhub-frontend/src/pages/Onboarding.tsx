@@ -1,9 +1,36 @@
 import { motion } from "motion/react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router";
+import { useEffect } from "react";
+import { Loader2 } from "lucide-react";
 
 export default function Onboarding() {
   const { mutate: authenticateWithGoogle } = useGoogleAuth();
+  const { isAuthenticated, isLoading, needsRegistration } = useAuth();
+  const navigate = useNavigate();
+
+  // Redirect authenticated users to the app
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      if (needsRegistration) {
+        navigate("/complete-registration", { replace: true });
+      } else {
+        navigate("/app", { replace: true });
+      }
+    }
+  }, [isAuthenticated, isLoading, needsRegistration, navigate]);
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-green-50">
+        <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
+        <p className="text-lg text-gray-700">Verificando sessão...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 p-8">

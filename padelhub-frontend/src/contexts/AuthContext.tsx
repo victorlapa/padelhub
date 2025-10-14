@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 import type { User } from "@/services/api";
+import { verifyToken } from "@/services/api";
 
 interface AuthContextType {
   user: User | null;
@@ -17,7 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start as true to check session on mount
 
   const login = React.useCallback((userData: User) => {
     setUser(userData);
@@ -49,12 +50,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return !user.phone || !user.city || user.category === undefined;
   }, [user]);
 
-  // Optional: Check localStorage on mount
+  // Check localStorage and validate token on mount
   React.useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    const restoreSession = async () => {
+      const storedUser = localStorage.getItem("user");
+      const storedToken = localStorage.getItem("authToken");
+
+      if (storedUser && storedToken) {
+        try {
+          // Verify the token is still valid
+          const isValid = await verifyToken(storedToken);
+
+          if (isValid) {
+            // Token is valid, restore the session
+            setUser(JSON.parse(storedUser));
+          } else {
+            // Token is invalid, clear the session
+            console.warn("Invalid or expired token, clearing session");
+            localStorage.removeItem("user");
+            localStorage.removeItem("authToken");
+          }
+        } catch (error) {
+          console.error("Error verifying token:", error);
+          // On error, clear the session to be safe
+          localStorage.removeItem("user");
+          localStorage.removeItem("authToken");
+        }
+      }
+
+      // Always set loading to false after checking
+      setIsLoading(false);
+    };
+
+    restoreSession();
   }, []);
 
   const value = React.useMemo(
