@@ -4,27 +4,21 @@ interface CourtUserProps {
   icon?: string;
   name?: string;
   elo?: number;
-  team?: "A" | "B";
   isConfirmed?: boolean;
 }
 
 export default function CourtUser({
   elo,
   icon,
-  team,
   name,
   isConfirmed = false,
 }: CourtUserProps) {
-  const teamColor = team === "A" ? "bg-blue-500" : "bg-red-500";
-
   return (
     <div>
       <div className="flex flex-col items-center gap-1">
         {/* Player avatar with team color */}
         <div className="relative">
-          <div
-            className={`rounded-full ${teamColor} p-1 shadow-lg ring-2 ring-white`}
-          >
+          <div className={`rounded-full p-1 shadow-lg`}>
             {icon ? (
               <img
                 width={32}

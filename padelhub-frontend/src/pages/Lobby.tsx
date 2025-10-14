@@ -2,7 +2,14 @@ import ChatButton from "@/components/ChatButton";
 import GameChat from "@/components/GameChat";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { ArrowLeft, UserPlus, MapPin, Clock, Loader2, LogOut } from "lucide-react";
+import {
+  ArrowLeft,
+  UserPlus,
+  MapPin,
+  Clock,
+  Loader2,
+  LogOut,
+} from "lucide-react";
 import CourtUser from "@/components/Lobby/CourtUser";
 import Spacer from "@/components/Spacer";
 import { motion, AnimatePresence } from "motion/react";
@@ -22,11 +29,17 @@ const Lobby = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [isChatOpen, setIsChatOpen] = useState(false);
-  const [confirmedPlayers, setConfirmedPlayers] = useState<Set<string>>(new Set());
+  const [confirmedPlayers, setConfirmedPlayers] = useState<Set<string>>(
+    new Set()
+  );
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
   // Fetch match data from API
-  const { data: match, isLoading, error } = useQuery({
+  const {
+    data: match,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["match", lobbyId],
     queryFn: () => getMatchById(lobbyId!),
     enabled: !!lobbyId,
@@ -68,28 +81,33 @@ const Lobby = () => {
   }, [match]);
 
   // Transform match data to lobby format for compatibility
-  const lobby = match ? {
-    id: match.matchId,
-    club: {
-      name: match.club.name,
-      neighbourhood: "", // Not available in backend
-      address: match.club.address,
-      mapsLink: `https://maps.google.com/?q=${encodeURIComponent(match.club.address)}`,
-    },
-    category: match.category,
-    startTime: new Date(match.startDate),
-    endTime: new Date(match.endDate),
-    currentPlayers: match.matchPlayers.length,
-    maxPlayers: 4,
-    isCourtScheduled: match.isCourtScheduled,
-    players: match.matchPlayers.map((mp) => ({
-      id: mp.userId,
-      name: `${mp.user.firstName} ${mp.user.lastName}`,
-      elo: mp.user.category ? mp.user.category * 100 : 800,
-      team: mp.team === "UNASSIGNED" ? ("unassigned" as const) : mp.team,
-      position: "left" as const, // Default position
-    })),
-  } : null;
+  const lobby = match
+    ? {
+        id: match.matchId,
+        club: {
+          name: match.club.name,
+          neighbourhood: "", // Not available in backend
+          address: match.club.address,
+          mapsLink: `https://maps.google.com/?q=${encodeURIComponent(
+            match.club.address
+          )}`,
+        },
+        category: match.category,
+        startTime: new Date(match.startDate),
+        endTime: new Date(match.endDate),
+        currentPlayers: match.matchPlayers.length,
+        maxPlayers: 4,
+        isCourtScheduled: match.isCourtScheduled,
+        players: match.matchPlayers.map((mp) => ({
+          id: mp.userId,
+          name: `${mp.user.firstName} ${mp.user.lastName}`,
+          elo: mp.user.category ? mp.user.category * 100 : 800,
+          team: mp.team === "UNASSIGNED" ? ("unassigned" as const) : mp.team,
+          position: "left" as const, // Default position
+          icon: mp.user.profilePictureUrl,
+        })),
+      }
+    : null;
 
   const currentUserId = user?.id || "";
 
@@ -213,7 +231,7 @@ const Lobby = () => {
 
   const handleOpenMaps = () => {
     if (lobby?.club?.mapsLink) {
-      window.open(lobby.club.mapsLink, '_blank');
+      window.open(lobby.club.mapsLink, "_blank");
     }
   };
 
@@ -230,7 +248,9 @@ const Lobby = () => {
   };
 
   // Check if user is in the match
-  const isUserInMatch = lobby?.players?.some((player) => player.id === currentUserId);
+  const isUserInMatch = lobby?.players?.some(
+    (player) => player.id === currentUserId
+  );
 
   // Check if match has started (based on start time)
   const hasMatchStarted = lobby ? new Date() >= lobby.startTime : false;
@@ -290,7 +310,7 @@ const Lobby = () => {
                   {lobby.startTime.toLocaleDateString("pt-PT", {
                     weekday: "long",
                     day: "numeric",
-                    month: "long"
+                    month: "long",
                   })}
                 </p>
               </div>
@@ -364,8 +384,8 @@ const Lobby = () => {
                       <CourtUser
                         name={player.name}
                         elo={player.elo}
-                        team="A"
                         isConfirmed={true}
+                        icon={player.icon}
                       />
                       {player.id === currentUserId && (
                         <div className="absolute -top-2 -right-2 bg-blue-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg">
@@ -392,8 +412,8 @@ const Lobby = () => {
                       <CourtUser
                         name={player.name}
                         elo={player.elo}
-                        team="B"
                         isConfirmed={true}
+                        icon={player.icon}
                       />
                       {player.id === currentUserId && (
                         <div className="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg">
@@ -422,6 +442,7 @@ const Lobby = () => {
                           name={player.name}
                           elo={player.elo}
                           isConfirmed={true}
+                          icon={player.icon}
                         />
                         {player.id === currentUserId && (
                           <div className="absolute -top-2 -right-2 bg-gray-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg">
@@ -530,8 +551,8 @@ const Lobby = () => {
                     <CourtUser
                       name={player.name}
                       elo={player.elo}
-                      team="A"
                       isConfirmed={confirmedPlayers.has(player.id)}
+                      icon={player.icon}
                     />
                     {isCurrentUser && (
                       <p className="mt-1 text-center text-xs text-blue-300">
@@ -588,8 +609,8 @@ const Lobby = () => {
                     <CourtUser
                       name={player.name}
                       elo={player.elo}
-                      team="B"
                       isConfirmed={confirmedPlayers.has(player.id)}
+                      icon={player.icon}
                     />
                     {isCurrentUser && (
                       <p className="mt-1 text-center text-xs text-red-300">
@@ -633,6 +654,7 @@ const Lobby = () => {
                       name={player.name}
                       elo={player.elo}
                       isConfirmed={confirmedPlayers.has(player.id)}
+                      icon={player.icon}
                     />
                     {isCurrentUser && (
                       <p className="mt-1 text-center text-xs text-gray-300">
@@ -658,7 +680,6 @@ const Lobby = () => {
           <motion.button
             onClick={handleLeaveMatch}
             disabled={leaveMatchMutation.isPending}
-            whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="w-full flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed mb-3"
           >
