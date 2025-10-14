@@ -393,3 +393,36 @@ export async function joinMatch(
     throw error;
   }
 }
+
+/**
+ * Remove a player from a match
+ * @param matchId - The match ID to leave
+ * @param userId - The user ID to remove
+ * @returns Success response
+ */
+export async function leaveMatch(
+  matchId: string,
+  userId: string
+): Promise<{ success: boolean }> {
+  try {
+    const response = await fetch(
+      `${API_URL}/matches/${matchId}/players/${userId}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to leave match");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error leaving match:", error);
+    throw error;
+  }
+}

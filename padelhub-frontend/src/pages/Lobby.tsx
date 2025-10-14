@@ -2,12 +2,12 @@ import ChatButton from "@/components/ChatButton";
 import GameChat from "@/components/GameChat";
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { ArrowLeft, UserPlus, MapPin, Clock, Loader2 } from "lucide-react";
+import { ArrowLeft, UserPlus, MapPin, Clock, Loader2, LogOut } from "lucide-react";
 import CourtUser from "@/components/Lobby/CourtUser";
 import Spacer from "@/components/Spacer";
 import { motion, AnimatePresence } from "motion/react";
-import { useQuery } from "@tanstack/react-query";
-import { getMatchById } from "@/services/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getMatchById, leaveMatch } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface PlayerAssignment {
@@ -20,6 +20,7 @@ const Lobby = () => {
   const { lobbyId } = useParams<{ lobbyId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [confirmedPlayers, setConfirmedPlayers] = useState<Set<string>>(new Set());
   const [timeRemaining, setTimeRemaining] = useState<string>("");
@@ -30,6 +31,21 @@ const Lobby = () => {
     queryFn: () => getMatchById(lobbyId!),
     enabled: !!lobbyId,
     refetchInterval: 10000, // Refetch every 10 seconds
+  });
+
+  // Leave match mutation
+  const leaveMatchMutation = useMutation({
+    mutationFn: ({ matchId, userId }: { matchId: string; userId: string }) =>
+      leaveMatch(matchId, userId),
+    onSuccess: async () => {
+      // Invalidate queries to refresh data
+      await queryClient.invalidateQueries({ queryKey: ["matches"] });
+      // Navigate back to matches list after leaving
+      navigate("/app");
+    },
+    onError: (error: Error) => {
+      alert(`Erro ao sair da partida: ${error.message}`);
+    },
   });
 
   // Team assignments state - derived from match players
@@ -51,33 +67,8 @@ const Lobby = () => {
     }
   }, [match]);
 
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 text-white">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
-        <p>Carregando partida...</p>
-      </div>
-    );
-  }
-
-  // Error state
-  if (error || !match) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 text-white">
-        <h1 className="mb-4 text-2xl">Partida não encontrada</h1>
-        <button
-          onClick={() => navigate("/app")}
-          className="text-blue-400 hover:underline"
-        >
-          Voltar para partidas
-        </button>
-      </div>
-    );
-  }
-
   // Transform match data to lobby format for compatibility
-  const lobby = {
+  const lobby = match ? {
     id: match.matchId,
     club: {
       name: match.club.name,
@@ -98,7 +89,7 @@ const Lobby = () => {
       team: mp.team === "UNASSIGNED" ? ("unassigned" as const) : mp.team,
       position: "left" as const, // Default position
     })),
-  };
+  } : null;
 
   const currentUserId = user?.id || "";
 
@@ -161,7 +152,7 @@ const Lobby = () => {
     lobby.players.every((player) => confirmedPlayers.has(player.id));
 
   // Check if match is ready (court scheduled AND all players confirmed)
-  const isMatchReady = lobby.isCourtScheduled && allPlayersConfirmed;
+  const isMatchReady = lobby?.isCourtScheduled && allPlayersConfirmed;
 
   // Calculate time remaining until match start
   useEffect(() => {
@@ -195,11 +186,54 @@ const Lobby = () => {
     return () => clearInterval(interval);
   }, [isMatchReady, lobby]);
 
+  // Loading state - AFTER all hooks
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 text-white">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500 mb-4" />
+        <p>Carregando partida...</p>
+      </div>
+    );
+  }
+
+  // Error state - AFTER all hooks
+  if (error || !match || !lobby) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 text-white">
+        <h1 className="mb-4 text-2xl">Partida não encontrada</h1>
+        <button
+          onClick={() => navigate("/app")}
+          className="text-blue-400 hover:underline"
+        >
+          Voltar para partidas
+        </button>
+      </div>
+    );
+  }
+
   const handleOpenMaps = () => {
     if (lobby?.club?.mapsLink) {
       window.open(lobby.club.mapsLink, '_blank');
     }
   };
+
+  const handleLeaveMatch = () => {
+    if (!user?.id || !lobbyId) return;
+
+    const confirmLeave = window.confirm(
+      "Tem certeza que deseja sair desta partida?"
+    );
+
+    if (confirmLeave) {
+      leaveMatchMutation.mutate({ matchId: lobbyId, userId: user.id });
+    }
+  };
+
+  // Check if user is in the match
+  const isUserInMatch = lobby?.players?.some((player) => player.id === currentUserId);
+
+  // Check if match has started (based on start time)
+  const hasMatchStarted = lobby ? new Date() >= lobby.startTime : false;
 
   // If match is ready, show the ready state
   if (isMatchReady) {
@@ -618,6 +652,20 @@ const Lobby = () => {
         </div>
 
         <Spacer height={20} />
+
+        {/* Leave Match Button - Only show if user hasn't confirmed and match hasn't started */}
+        {isUserInMatch && !isUserConfirmed && !hasMatchStarted && (
+          <motion.button
+            onClick={handleLeaveMatch}
+            disabled={leaveMatchMutation.isPending}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className="w-full flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-3 font-semibold text-white transition-colors hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed mb-3"
+          >
+            <LogOut className="h-5 w-5" />
+            {leaveMatchMutation.isPending ? "Saindo..." : "Sair da Partida"}
+          </motion.button>
+        )}
 
         {/* Confirmation button - hide when match is scheduled and all players confirmed */}
         {!(lobby.isCourtScheduled && allPlayersConfirmed) && (

@@ -28,9 +28,10 @@ export default function App() {
   const joinMatchMutation = useMutation({
     mutationFn: ({ matchId, userId }: { matchId: string; userId: string }) =>
       joinMatch(matchId, userId),
-    onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["matches"] });
-      queryClient.invalidateQueries({ queryKey: ["match", variables.matchId] });
+    onSuccess: async (_data, variables) => {
+      // Invalidate queries to refresh data
+      await queryClient.invalidateQueries({ queryKey: ["matches"] });
+      await queryClient.invalidateQueries({ queryKey: ["match", variables.matchId] });
       // Navigate to lobby after successfully joining
       navigate(`/app/lobby/${variables.matchId}`);
     },
@@ -64,11 +65,16 @@ export default function App() {
     });
   };
 
-  // Filter only pending matches
-  const pendingMatches = matches.filter((match) => match.status === "PENDING");
+  // Filter only pending matches that haven't started yet
+  const now = new Date();
+  const availableMatches = matches.filter((match) => {
+    const isMatchPending = match.status === "PENDING";
+    const hasNotStarted = new Date(match.startDate) > now;
+    return isMatchPending && hasNotStarted;
+  });
 
   // Sort matches by date/time
-  const sortedMatches = [...pendingMatches].sort(
+  const sortedMatches = [...availableMatches].sort(
     (a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
   );
 
