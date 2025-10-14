@@ -9,6 +9,7 @@ import {
   Clock,
   Loader2,
   LogOut,
+  RefreshCw,
 } from "lucide-react";
 import CourtUser from "@/components/Lobby/CourtUser";
 import Spacer from "@/components/Spacer";
@@ -16,6 +17,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getMatchById, leaveMatch } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserActivity } from "@/hooks/useUserActivity";
 
 interface PlayerAssignment {
   playerId: string;
@@ -34,29 +36,63 @@ const Lobby = () => {
   );
   const [timeRemaining, setTimeRemaining] = useState<string>("");
 
-  // Fetch match data from API
+  // Track user activity for adaptive polling
+  const isUserActive = useUserActivity(30000); // 30 seconds of inactivity threshold
+
+  // Adaptive polling interval based on user activity
+  const pollingInterval = isUserActive ? 3000 : 10000; // 3s when active, 10s when idle
+
+  // Fetch match data from API with optimized polling
   const {
     data: match,
     isLoading,
     error,
+    dataUpdatedAt,
+    isFetching,
   } = useQuery({
     queryKey: ["match", lobbyId],
     queryFn: () => getMatchById(lobbyId!),
     enabled: !!lobbyId,
-    refetchInterval: 10000, // Refetch every 10 seconds
+    refetchInterval: pollingInterval, // Adaptive interval
+    refetchOnWindowFocus: true, // Refetch when user returns to tab
+    refetchOnReconnect: true, // Refetch when connection is restored
+    staleTime: 2000, // Consider data stale after 2 seconds
   });
 
-  // Leave match mutation
+  // Leave match mutation with optimistic updates
   const leaveMatchMutation = useMutation({
     mutationFn: ({ matchId, userId }: { matchId: string; userId: string }) =>
       leaveMatch(matchId, userId),
+    onMutate: async ({ matchId, userId }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ["match", matchId] });
+
+      // Snapshot the previous value
+      const previousMatch = queryClient.getQueryData(["match", matchId]);
+
+      // Optimistically update to show user leaving immediately
+      queryClient.setQueryData(["match", matchId], (old: any) => {
+        if (!old) return old;
+        return {
+          ...old,
+          matchPlayers: old.matchPlayers.filter((p: any) => p.userId !== userId),
+        };
+      });
+
+      // Return context with the snapshot
+      return { previousMatch };
+    },
     onSuccess: async () => {
       // Invalidate queries to refresh data
       await queryClient.invalidateQueries({ queryKey: ["matches"] });
       // Navigate back to matches list after leaving
       navigate("/app");
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _variables, context) => {
+      // Rollback on error
+      if (context?.previousMatch) {
+        queryClient.setQueryData(["match", lobbyId], context.previousMatch);
+      }
       alert(`Erro ao sair da partida: ${error.message}`);
     },
   });
@@ -485,6 +521,13 @@ const Lobby = () => {
         >
           <ArrowLeft className="h-6 w-6" />
         </button>
+        {/* Live update indicator */}
+        {isFetching && (
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            <RefreshCw className="h-4 w-4 animate-spin text-blue-400" />
+            <span className="text-xs text-blue-400">Atualizando...</span>
+          </div>
+        )}
         <h1 className="text-2xl font-bold text-white">Jogo #{lobby.id}</h1>
         <p className="text-sm text-gray-300">
           {lobby.club.name}, {lobby.club.neighbourhood} •{" "}
