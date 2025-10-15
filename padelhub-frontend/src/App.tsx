@@ -18,7 +18,11 @@ export default function App() {
   );
 
   // Fetch matches from API
-  const { data: matches = [], isLoading, error } = useQuery({
+  const {
+    data: matches = [],
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["matches"],
     queryFn: getMatches,
     refetchInterval: 30000, // Refetch every 30 seconds
@@ -31,7 +35,9 @@ export default function App() {
     onSuccess: async (_data, variables) => {
       // Invalidate queries to refresh data
       await queryClient.invalidateQueries({ queryKey: ["matches"] });
-      await queryClient.invalidateQueries({ queryKey: ["match", variables.matchId] });
+      await queryClient.invalidateQueries({
+        queryKey: ["match", variables.matchId],
+      });
       // Navigate to lobby after successfully joining
       navigate(`/app/lobby/${variables.matchId}`);
     },
@@ -97,7 +103,9 @@ export default function App() {
             <div className="mx-auto max-w-6xl pb-3">
               <div className="mb-8 flex items-center justify-center gap-2">
                 <MapPin className="h-6 w-6" />
-                <h2 className="text-2xl font-semibold">{user.city || "Sua Cidade"}</h2>
+                <h2 className="text-2xl font-semibold">
+                  {user.city || "Sua Cidade"}
+                </h2>
               </div>
 
               <div className="mb-6 flex items-center justify-between">
@@ -108,26 +116,24 @@ export default function App() {
               </div>
 
               {/* Sticky filter bar */}
-              <div className="sticky top-0 z-10 -mx-5 bg-background px-5 py-3 shadow-sm">
-                <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant={selectedCategory === null ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedCategory(null)}
+                >
+                  Todas
+                </Button>
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((cat) => (
                   <Button
-                    variant={selectedCategory === null ? "default" : "outline"}
+                    key={cat}
+                    variant={selectedCategory === cat ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setSelectedCategory(null)}
+                    onClick={() => setSelectedCategory(cat)}
                   >
-                    Todas
+                    Cat. {cat}
                   </Button>
-                  {[1, 2, 3, 4, 5, 6, 7, 8].map((cat) => (
-                    <Button
-                      key={cat}
-                      variant={selectedCategory === cat ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setSelectedCategory(cat)}
-                    >
-                      Cat. {cat}
-                    </Button>
-                  ))}
-                </div>
+                ))}
               </div>
 
               {/* Loading state */}
@@ -169,11 +175,15 @@ export default function App() {
                           >
                             <Card
                               className="cursor-pointer transition-shadow hover:shadow-lg"
-                              onClick={() => navigate(`/app/lobby/${match.matchId}`)}
+                              onClick={() =>
+                                navigate(`/app/lobby/${match.matchId}`)
+                              }
                             >
                               <CardHeader>
                                 <CardTitle className="flex items-center justify-between gap-2">
-                                  <span className="text-lg">{match.club.name}</span>
+                                  <span className="text-lg">
+                                    {match.club.name}
+                                  </span>
                                   <div className="flex items-center gap-2">
                                     <span className="text-primary bg-primary/10 rounded-full px-3 py-1 text-sm font-bold">
                                       Cat. {match.category}
@@ -214,8 +224,14 @@ export default function App() {
                                 </div>
                                 <Button
                                   className="mt-4 w-full"
-                                  variant={isFull || isUserInMatch ? "secondary" : "default"}
-                                  disabled={isFull || joinMatchMutation.isPending}
+                                  variant={
+                                    isFull || isUserInMatch
+                                      ? "secondary"
+                                      : "default"
+                                  }
+                                  disabled={
+                                    isFull || joinMatchMutation.isPending
+                                  }
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     if (isUserInMatch) {

@@ -11,79 +11,31 @@ import {
   Trophy,
   CheckCircle,
   XCircle,
+  Loader2,
 } from "lucide-react";
-
-// Development mode flag
-const USE_MOCK_USER = import.meta.env.DEV;
-
-// Mock user for development
-const mockUser = {
-  id: "dev-user-1",
-  email: "dev@padelhub.com",
-  name: "Desenvolvedor",
-  picture: undefined,
-};
-
-// Mock matches data - will be replaced with API call
-const mockMatches = [
-  {
-    id: "1",
-    club: { name: "Padel Center Lisboa", neighbourhood: "Alvalade" },
-    category: 3,
-    date: new Date(2025, 8, 15, 18, 0),
-    endTime: new Date(2025, 8, 15, 19, 30),
-    status: "completed",
-    result: "win",
-    players: 4,
-    score: "6-4, 6-3",
-  },
-  {
-    id: "2",
-    club: { name: "Sports Club Cascais", neighbourhood: "Cascais" },
-    category: 5,
-    date: new Date(2025, 8, 20, 20, 0),
-    endTime: new Date(2025, 8, 20, 21, 30),
-    status: "completed",
-    result: "loss",
-    players: 4,
-    score: "4-6, 3-6",
-  },
-  {
-    id: "3",
-    club: { name: "Padel Premium Sintra", neighbourhood: "Sintra" },
-    category: 2,
-    date: new Date(2025, 9, 5, 10, 0),
-    endTime: new Date(2025, 9, 5, 11, 30),
-    status: "upcoming",
-    result: null,
-    players: 4,
-    score: null,
-  },
-  {
-    id: "4",
-    club: { name: "Padel Center Lisboa", neighbourhood: "Alvalade" },
-    category: 4,
-    date: new Date(2025, 9, 8, 19, 0),
-    endTime: new Date(2025, 9, 8, 20, 30),
-    status: "upcoming",
-    result: null,
-    players: 4,
-    score: null,
-  },
-];
+import { useQuery } from "@tanstack/react-query";
+import { getUserMatches, type Match as MatchType } from "@/services/api";
 
 export default function Match() {
   const navigate = useNavigate();
-  const { user: authUser } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
 
-  // Use mock user in development mode if no auth session exists
-  const user = authUser || (USE_MOCK_USER ? mockUser : null);
+  // Fetch user's matches
+  const {
+    data: matches = [],
+    isLoading: isMatchesLoading,
+    error,
+  } = useQuery({
+    queryKey: ["userMatches", user?.id],
+    queryFn: () => getUserMatches(user!.id),
+    enabled: !!user?.id,
+  });
 
   React.useEffect(() => {
-    if (!user && !USE_MOCK_USER) {
+    if (!user && !isAuthLoading) {
       navigate("/");
     }
-  }, [user, navigate]);
+  }, [user, isAuthLoading, navigate]);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString("pt-PT", {
@@ -100,27 +52,75 @@ export default function Match() {
     });
   };
 
-  const completedMatches = mockMatches.filter((m) => m.status === "completed");
-  const upcomingMatches = mockMatches.filter((m) => m.status === "upcoming");
+  // Determine match status based on dates and backend status
+  const getMatchStatus = (
+    match: MatchType
+  ): "upcoming" | "completed" | "in_progress" => {
+    const now = new Date();
+    const startDate = new Date(match.startDate);
+    const endDate = new Date(match.endDate);
 
-  const getStatusBadge = (status: string, result: string | null) => {
+    if (match.status === "COMPLETED" || match.status === "CANCELLED") {
+      return "completed";
+    }
+
+    if (now >= startDate && now <= endDate) {
+      return "in_progress";
+    }
+
+    if (now < startDate) {
+      return "upcoming";
+    }
+
+    return "completed";
+  };
+
+  const completedMatches = matches.filter(
+    (m) => getMatchStatus(m) === "completed"
+  );
+  const upcomingMatches = matches.filter(
+    (m) => getMatchStatus(m) === "upcoming"
+  );
+  const inProgressMatches = matches.filter(
+    (m) => getMatchStatus(m) === "in_progress"
+  );
+
+  const getStatusBadge = (match: MatchType) => {
+    const status = getMatchStatus(match);
+
     if (status === "completed") {
-      if (result === "win") {
+      if (match.status === "COMPLETED") {
         return (
-          <Badge className="bg-green-500 hover:bg-green-600">
+          <Badge className="bg-gray-500 hover:bg-gray-600">
             <CheckCircle className="mr-1 h-3 w-3" />
-            Vitória
+            Concluído
           </Badge>
         );
-      } else {
+      } else if (match.status === "CANCELLED") {
         return (
           <Badge className="bg-red-500 hover:bg-red-600">
             <XCircle className="mr-1 h-3 w-3" />
-            Derrota
+            Cancelado
           </Badge>
         );
       }
+      return (
+        <Badge className="bg-gray-500 hover:bg-gray-600">
+          <CheckCircle className="mr-1 h-3 w-3" />
+          Finalizado
+        </Badge>
+      );
     }
+
+    if (status === "in_progress") {
+      return (
+        <Badge className="bg-green-500 hover:bg-green-600">
+          <Clock className="mr-1 h-3 w-3" />
+          Em Andamento
+        </Badge>
+      );
+    }
+
     return (
       <Badge className="bg-blue-500 hover:bg-blue-600">
         <Clock className="mr-1 h-3 w-3" />
@@ -128,6 +128,41 @@ export default function Match() {
       </Badge>
     );
   };
+
+  // Loading state
+  if (isAuthLoading || isMatchesLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground">Carregando partidas...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-center">
+          <XCircle className="mx-auto h-16 w-16 text-red-500 mb-4" />
+          <p className="text-lg font-semibold mb-2">
+            Erro ao carregar partidas
+          </p>
+          <p className="text-muted-foreground text-sm mb-4">
+            {error instanceof Error ? error.message : "Erro desconhecido"}
+          </p>
+          <button
+            onClick={() => navigate("/app")}
+            className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+          >
+            Voltar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-background text-foreground min-h-screen w-full p-5">
@@ -145,7 +180,7 @@ export default function Match() {
           <Card>
             <CardContent className="pt-6 text-center">
               <Trophy className="mx-auto mb-2 h-8 w-8 text-yellow-500" />
-              <p className="text-2xl font-bold">{mockMatches.length}</p>
+              <p className="text-2xl font-bold">{matches.length}</p>
               <p className="text-muted-foreground text-sm">Total</p>
             </CardContent>
           </Card>
@@ -153,18 +188,19 @@ export default function Match() {
             <CardContent className="pt-6 text-center">
               <CheckCircle className="mx-auto mb-2 h-8 w-8 text-green-500" />
               <p className="text-2xl font-bold">
-                {completedMatches.filter((m) => m.result === "win").length}
+                {
+                  completedMatches.filter((m) => m.status === "COMPLETED")
+                    .length
+                }
               </p>
-              <p className="text-muted-foreground text-sm">Vitórias</p>
+              <p className="text-muted-foreground text-sm">Concluídas</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6 text-center">
-              <XCircle className="mx-auto mb-2 h-8 w-8 text-red-500" />
-              <p className="text-2xl font-bold">
-                {completedMatches.filter((m) => m.result === "loss").length}
-              </p>
-              <p className="text-muted-foreground text-sm">Derrotas</p>
+              <Clock className="mx-auto mb-2 h-8 w-8 text-blue-500" />
+              <p className="text-2xl font-bold">{upcomingMatches.length}</p>
+              <p className="text-muted-foreground text-sm">Agendadas</p>
             </CardContent>
           </Card>
         </div>
@@ -176,35 +212,36 @@ export default function Match() {
             <div className="grid gap-4 md:grid-cols-2">
               {upcomingMatches.map((match) => (
                 <Card
-                  key={match.id}
+                  key={match.matchId}
                   className="cursor-pointer transition-shadow hover:shadow-lg"
-                  onClick={() => navigate(`/app/lobby/${match.id}`)}
+                  onClick={() => navigate(`/app/lobby/${match.matchId}`)}
                 >
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <span className="text-lg">{match.club.name}</span>
-                      {getStatusBadge(match.status, match.result)}
+                      {getStatusBadge(match)}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center gap-2 text-sm">
                       <MapPin className="text-muted-foreground h-4 w-4" />
-                      <span>{match.club.neighbourhood}</span>
+                      <span>{match.club.address}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="text-muted-foreground h-4 w-4" />
-                      <span>{formatDate(match.date)}</span>
+                      <span>{formatDate(new Date(match.startDate))}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Clock className="text-muted-foreground h-4 w-4" />
                       <span>
-                        {formatTime(match.date)} - {formatTime(match.endTime)}
+                        {formatTime(new Date(match.startDate))} -{" "}
+                        {formatTime(new Date(match.endDate))}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <Users className="text-muted-foreground h-4 w-4" />
-                        <span>{match.players} jogadores</span>
+                        <span>{match.matchPlayers.length} jogadores</span>
                       </div>
                       <span className="text-primary rounded-full bg-primary/10 px-3 py-1 text-xs font-bold">
                         Cat. {match.category}
@@ -224,35 +261,36 @@ export default function Match() {
             <div className="grid gap-4 md:grid-cols-2">
               {completedMatches.map((match) => (
                 <Card
-                  key={match.id}
+                  key={match.matchId}
                   className="cursor-pointer transition-shadow hover:shadow-lg"
-                  onClick={() => navigate(`/app/lobby/${match.id}`)}
+                  onClick={() => navigate(`/app/lobby/${match.matchId}`)}
                 >
                   <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                       <span className="text-lg">{match.club.name}</span>
-                      {getStatusBadge(match.status, match.result)}
+                      {getStatusBadge(match)}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="flex items-center gap-2 text-sm">
                       <MapPin className="text-muted-foreground h-4 w-4" />
-                      <span>{match.club.neighbourhood}</span>
+                      <span>{match.club.address}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar className="text-muted-foreground h-4 w-4" />
-                      <span>{formatDate(match.date)}</span>
+                      <span>{formatDate(new Date(match.startDate))}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm">
                       <Clock className="text-muted-foreground h-4 w-4" />
                       <span>
-                        {formatTime(match.date)} - {formatTime(match.endTime)}
+                        {formatTime(new Date(match.startDate))} -{" "}
+                        {formatTime(new Date(match.endDate))}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
-                        <Trophy className="text-muted-foreground h-4 w-4" />
-                        <span className="font-semibold">{match.score}</span>
+                        <Users className="text-muted-foreground h-4 w-4" />
+                        <span>{match.matchPlayers.length} jogadores</span>
                       </div>
                       <span className="text-primary rounded-full bg-primary/10 px-3 py-1 text-xs font-bold">
                         Cat. {match.category}
@@ -266,7 +304,7 @@ export default function Match() {
         )}
 
         {/* Empty State */}
-        {mockMatches.length === 0 && (
+        {matches.length === 0 && (
           <div className="text-muted-foreground py-12 text-center">
             <Trophy className="mx-auto mb-4 h-16 w-16 opacity-50" />
             <p className="mb-2 text-lg">Nenhuma partida encontrada</p>

@@ -1,5 +1,6 @@
 import { User } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getProxiedImageUrl } from "@/utils/imageProxy";
 
 interface ProfileBarProps {
   userName: string;
@@ -17,6 +18,7 @@ export default function ProfileBar({
   profilePictureUrl,
 }: ProfileBarProps) {
   const progressPercentage = Math.min((elo / maxElo) * 100, 100);
+  const proxiedImageUrl = getProxiedImageUrl(profilePictureUrl);
 
   return (
     <div
@@ -25,9 +27,9 @@ export default function ProfileBar({
         className
       )}
     >
-      {profilePictureUrl ? (
+      {proxiedImageUrl ? (
         <img
-          src={profilePictureUrl}
+          src={proxiedImageUrl}
           alt={userName}
           className="h-12 w-12 flex-shrink-0 rounded-full object-cover"
         />

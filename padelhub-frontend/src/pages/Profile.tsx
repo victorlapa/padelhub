@@ -2,6 +2,7 @@ import { Card } from "@/components/ui/card";
 import { User, Mail, Calendar, Trophy, Phone, MapPin } from "lucide-react";
 import { useNavigate } from "react-router";
 import { useAuth } from "@/contexts/AuthContext";
+import { getProxiedImageUrl } from "@/utils/imageProxy";
 import React from "react";
 
 export default function ProfilePage() {
@@ -29,6 +30,8 @@ export default function ProfilePage() {
     return null;
   }
 
+  const proxiedImageUrl = getProxiedImageUrl(user.profilePictureUrl);
+
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="mx-auto max-w-2xl">
@@ -43,9 +46,9 @@ export default function ProfilePage() {
           <div className="flex flex-col items-center text-center">
             {/* Profile Image */}
             <div className="mb-4">
-              {user.profilePictureUrl ? (
+              {proxiedImageUrl ? (
                 <img
-                  src={user.profilePictureUrl}
+                  src={proxiedImageUrl}
                   alt={`${user.firstName} ${user.lastName}`}
                   className="h-24 w-24 rounded-full border-4 border-white shadow-lg"
                 />

@@ -426,3 +426,28 @@ export async function leaveMatch(
     throw error;
   }
 }
+
+/**
+ * Fetch all matches for a specific user
+ * @param userId - The user ID
+ * @returns Array of matches the user is participating in
+ */
+export async function getUserMatches(userId: string): Promise<Match[]> {
+  try {
+    const response = await fetch(`${API_URL}/matches/user/${userId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch user matches");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching user matches:", error);
+    throw error;
+  }
+}

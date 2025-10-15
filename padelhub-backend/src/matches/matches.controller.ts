@@ -30,6 +30,11 @@ export class MatchesController {
     return this.matchesService.findAll();
   }
 
+  @Get('user/:userId')
+  findByUserId(@Param('userId') userId: string) {
+    return this.matchesService.findByUserId(userId);
+  }
+
   @Get(':matchId')
   findOne(@Param('matchId') matchId: string) {
     return this.matchesService.findOne(matchId);

@@ -124,4 +124,23 @@ export class MatchesService {
       order: { joinedAt: 'ASC' },
     });
   }
+
+  async findByUserId(userId: string): Promise<Match[]> {
+    // Find all match players for this user
+    const matchPlayers = await this.matchPlayerRepository.find({
+      where: { userId },
+      relations: ['match', 'match.club', 'match.matchPlayers', 'match.matchPlayers.user'],
+      order: { joinedAt: 'DESC' },
+    });
+
+    // Extract unique matches and sort by start date
+    const matches = matchPlayers
+      .map(mp => mp.match)
+      .filter((match, index, self) =>
+        index === self.findIndex(m => m.matchId === match.matchId)
+      )
+      .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+
+    return matches;
+  }
 }

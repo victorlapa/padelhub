@@ -1,4 +1,5 @@
 import { UserCircle2, CheckCircle2 } from "lucide-react";
+import { getProxiedImageUrl } from "@/utils/imageProxy";
 
 interface CourtUserProps {
   icon?: string;
@@ -13,17 +14,19 @@ export default function CourtUser({
   name,
   isConfirmed = false,
 }: CourtUserProps) {
+  const proxiedIcon = getProxiedImageUrl(icon);
+
   return (
     <div>
       <div className="flex flex-col items-center gap-1">
         {/* Player avatar with team color */}
         <div className="relative">
           <div className={`rounded-full p-1 shadow-lg`}>
-            {icon ? (
+            {proxiedIcon ? (
               <img
                 width={32}
                 height={32}
-                src={icon}
+                src={proxiedIcon}
                 alt={name ?? "Player"}
                 className="rounded-full"
               />
