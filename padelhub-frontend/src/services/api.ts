@@ -451,3 +451,126 @@ export async function getUserMatches(userId: string): Promise<Match[]> {
     throw error;
   }
 }
+
+/**
+ * Match Message interfaces
+ */
+export interface MatchMessage {
+  id: string;
+  matchId: string;
+  userId: string;
+  message: string;
+  createdAt: string;
+  user: User;
+}
+
+export interface CreateMatchMessageDto {
+  userId: string;
+  message: string;
+}
+
+/**
+ * Fetch messages for a specific match
+ * @param matchId - The match ID
+ * @param limit - Maximum number of messages to fetch (default: 50)
+ * @param before - Message ID to fetch messages before (for pagination)
+ * @returns Array of messages
+ */
+export async function getMatchMessages(
+  matchId: string,
+  limit: number = 50,
+  before?: string
+): Promise<MatchMessage[]> {
+  try {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+    });
+
+    if (before) {
+      params.append("before", before);
+    }
+
+    const response = await fetch(
+      `${API_URL}/matches/${matchId}/messages?${params}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch match messages");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching match messages:", error);
+    throw error;
+  }
+}
+
+/**
+ * Send a message to a match chat
+ * @param matchId - The match ID
+ * @param data - Message data (userId and message content)
+ * @returns The created message
+ */
+export async function sendMatchMessage(
+  matchId: string,
+  data: CreateMatchMessageDto
+): Promise<MatchMessage> {
+  try {
+    const response = await fetch(`${API_URL}/matches/${matchId}/messages`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to send message");
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Error sending message:", error);
+    throw error;
+  }
+}
+
+/**
+ * Delete a message (user can only delete their own messages)
+ * @param matchId - The match ID
+ * @param messageId - The message ID to delete
+ * @param userId - The user ID (for verification)
+ * @returns Success response
+ */
+export async function deleteMatchMessage(
+  matchId: string,
+  messageId: string,
+  userId: string
+): Promise<void> {
+  try {
+    const response = await fetch(
+      `${API_URL}/matches/${matchId}/messages/${messageId}?userId=${userId}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || "Failed to delete message");
+    }
+  } catch (error) {
+    console.error("Error deleting message:", error);
+    throw error;
+  }
+}

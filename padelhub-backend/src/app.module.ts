@@ -8,6 +8,7 @@ import { ClubsModule } from './clubs/clubs.module';
 import { MatchesModule } from './matches/matches.module';
 import { AuthModule } from './auth/auth.module';
 import { ImageProxyModule } from './image-proxy/image-proxy.module';
+import { MatchMessagesModule } from './match-messages/match-messages.module';
 import databaseConfig from './config/database.config';
 
 @Module({
@@ -27,6 +28,7 @@ import databaseConfig from './config/database.config';
     MatchesModule,
     AuthModule,
     ImageProxyModule,
+    MatchMessagesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

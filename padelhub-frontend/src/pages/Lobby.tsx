@@ -503,6 +503,7 @@ const Lobby = () => {
           }}
         />
         <GameChat
+          matchId={lobbyId!}
           isChatOpen={isChatOpen}
           setIsChatOpen={() => {
             setIsChatOpen(false);
@@ -761,6 +762,7 @@ const Lobby = () => {
         }}
       />
       <GameChat
+        matchId={lobbyId!}
         isChatOpen={isChatOpen}
         setIsChatOpen={() => {
           setIsChatOpen(false);
