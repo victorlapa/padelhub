@@ -52,7 +52,3 @@ export default function CourtUser({
     </div>
   );
 }
-
-const getEloColor = (elo: number) => {
-  if (elo) return "text-white";
-};

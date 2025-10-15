@@ -81,9 +81,6 @@ export default function Match() {
   const upcomingMatches = matches.filter(
     (m) => getMatchStatus(m) === "upcoming"
   );
-  const inProgressMatches = matches.filter(
-    (m) => getMatchStatus(m) === "in_progress"
-  );
 
   const getStatusBadge = (match: MatchType) => {
     const status = getMatchStatus(match);

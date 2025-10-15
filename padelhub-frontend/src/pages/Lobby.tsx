@@ -47,7 +47,6 @@ const Lobby = () => {
     data: match,
     isLoading,
     error,
-    dataUpdatedAt,
     isFetching,
   } = useQuery({
     queryKey: ["match", lobbyId],
@@ -202,8 +201,8 @@ const Lobby = () => {
 
   // Check if all players are confirmed
   const allPlayersConfirmed =
-    lobby?.players?.length > 0 &&
-    lobby.players.every((player) => confirmedPlayers.has(player.id));
+    (lobby?.players?.length ?? 0) > 0 &&
+    lobby?.players?.every((player) => confirmedPlayers.has(player.id));
 
   // Check if match is ready (court scheduled AND all players confirmed)
   const isMatchReady = lobby?.isCourtScheduled && allPlayersConfirmed;
