@@ -27,7 +27,7 @@ export function useUserActivity(inactivityTimeout: number = 30000): boolean {
     ];
 
     // Throttle activity detection to avoid excessive state updates
-    let throttleTimeout: NodeJS.Timeout | null = null;
+    let throttleTimeout: number | null = null;
 
     const throttledHandleActivity = () => {
       if (!throttleTimeout) {
@@ -39,9 +39,9 @@ export function useUserActivity(inactivityTimeout: number = 30000): boolean {
     };
 
     // Add event listeners
-    events.forEach(event => {
-      window.addEventListener(event, throttledHandleActivity);
-    });
+    for (const event of events) {
+      globalThis.addEventListener(event, throttledHandleActivity);
+    }
 
     // Check for inactivity periodically
     const inactivityInterval = setInterval(() => {
@@ -53,9 +53,9 @@ export function useUserActivity(inactivityTimeout: number = 30000): boolean {
 
     // Cleanup
     return () => {
-      events.forEach(event => {
-        window.removeEventListener(event, throttledHandleActivity);
-      });
+      for (const event of events) {
+        globalThis.removeEventListener(event, throttledHandleActivity);
+      }
       clearInterval(inactivityInterval);
       if (throttleTimeout) {
         clearTimeout(throttleTimeout);

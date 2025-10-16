@@ -5,6 +5,8 @@ interface CourtUserProps {
   icon?: string;
   name?: string;
   elo?: number;
+  team?: "A" | "B";
+  position?: "left" | "right";
   isConfirmed?: boolean;
 }
 
