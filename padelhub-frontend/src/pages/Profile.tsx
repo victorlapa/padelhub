@@ -161,6 +161,11 @@ export default function ProfilePage() {
             </div>
           </div>
         </Card>
+
+        {/* Build Info - Discreet Footer */}
+        <div className="mt-8 pb-4 text-center">
+          <p className="text-xs text-gray-400">v{__GIT_COMMIT_HASH__}</p>
+        </div>
       </div>
     </div>
   );

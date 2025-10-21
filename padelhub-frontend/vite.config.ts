@@ -1,11 +1,25 @@
 import { defineConfig } from "vite";
 import path from "node:path";
+import { execSync } from "node:child_process";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react-swc";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Get git commit hash
+const getGitHash = () => {
+  try {
+    return execSync("git rev-parse --short HEAD").toString().trim();
+  } catch {
+    return "unknown";
+  }
+};
+
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    __GIT_COMMIT_HASH__: JSON.stringify(getGitHash()),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
   plugins: [
     react(),
     tailwindcss(),
