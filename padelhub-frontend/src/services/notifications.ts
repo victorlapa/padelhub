@@ -1,4 +1,4 @@
-import { apiClient } from './api';
+import { apiClient } from './apiClient';
 
 export interface PushSubscriptionData {
   endpoint: string;
@@ -34,7 +34,11 @@ class NotificationsService {
     const response = await apiClient.get<{ publicKey: string }>(
       '/notifications/vapid-public-key'
     );
-    this.vapidPublicKey = response.data.publicKey;
+    const publicKey = response.data.publicKey;
+    if (!publicKey) {
+      throw new Error('VAPID public key not found');
+    }
+    this.vapidPublicKey = publicKey;
     return this.vapidPublicKey;
   }
 
@@ -108,7 +112,7 @@ class NotificationsService {
     // Subscribe to push
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey,
+      applicationServerKey: applicationServerKey as BufferSource,
     });
 
     // Convert subscription to JSON
