@@ -11,7 +11,11 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "prompt",
-      includeAssets: ["vite.svg", "icons/*.svg"],
+      includeAssets: ["vite.svg", "icons/*.svg", "sw-push.js"],
+      injectManifest: {
+        injectionPoint: undefined,
+      },
+      strategies: "generateSW",
       manifest: {
         name: "PadelHub",
         short_name: "PadelHub",
@@ -74,6 +78,7 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
+        importScripts: ['/sw-push.js'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
